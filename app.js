@@ -90,6 +90,7 @@ function normalize(raw){
  if(d.theme==='dark'||d.theme==='light')s.theme=d.theme;else delete s.theme;
  if(window.FormI18n&&FormI18n.LANGS.some(l=>l[0]===d.lang))s.lang=d.lang;else delete s.lang;
  if(d.anim==='off')s.anim='off';else delete s.anim;
+ if(d.sound==='off')s.sound='off';else delete s.sound;
  s.days={};if(d.days&&typeof d.days==='object')Object.keys(d.days).forEach(k=>{const p=d.days[k]&&+d.days[k].p;if(DATE_RE.test(k)&&Number.isFinite(p)&&p>=0&&p<=50)s.days[k]={p:Math.floor(p)}});
  s.medalDates={};if(d.medalDates&&typeof d.medalDates==='object')names.forEach(n=>{const o=Object.keys(medalMig).find(k=>medalMig[k]===n&&d.medalDates[k]),v=d.medalDates[n]||(o&&d.medalDates[o]);if(DATE_RE.test(String(v)))s.medalDates[n]=v});
  const ao=d.avatarOrig;if(ao&&typeof ao==='object'&&typeof ao.path==='string'&&ao.path.length<200)s.avatarOrig={path:ao.path,name:String(ao.name||'').slice(0,100),size:Math.max(0,+ao.size||0),at:+ao.at||0};else delete s.avatarOrig;
@@ -97,7 +98,7 @@ function normalize(raw){
  return s;
 }
 let state=load();
-const APP_VERSION='Бета 0.11',DB_NAME='lifeProtocolDB',DB_VER=1;
+const APP_VERSION='Бета 0.12',DB_NAME='lifeProtocolDB',DB_VER=1;
 let dbp=null,ready=false,idbOk=true;
 const getDb=()=>dbp||(dbp=new Promise((res,rej)=>{const r=indexedDB.open(DB_NAME,DB_VER);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('kv'))r.result.createObjectStore('kv')};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}));
 const idbGet=k=>getDb().then(db=>new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}));
@@ -219,7 +220,7 @@ function render(){
  window.renderAvatars&&renderAvatars();
 }
 function missionHTML(m){
- return `<div class="mission"><button class="check ${m.done?'done':''}" onclick="toggleMission('${m.id}')" aria-label="${m.done?'Выполнено':'Отметить выполненной'}" title="${m.done?'Выполнено':'Отметить выполненной'}">${m.done?'✓':''}</button><div style="min-width:0;flex:1"><div class="missiontitle" style="${m.done?'text-decoration:line-through;color:var(--dis)':''}">${esc(m.title)}</div><div class="missionmeta"><i class="cdot" style="background:${catColor(m.category)}"></i><span>${esc(categories[m.category]||m.category)}</span> · <span>${m.repeat==='daily'?'Каждый день':'Однократно'}</span></div></div><span class="xp">${m.done?'+'+XP_PER_MISSION+' XP':XP_PER_MISSION+' XP'}</span><button class="iconbtn edit" onclick="editMission('${m.id}')" aria-label="Изменить задачу" title="Изменить"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button></div>`;
+ return `<div class="mission"><button class="check ${m.done?'done':''}" onclick="toggleMission('${m.id}')" aria-label="${m.done?'Отменить выполнение':'Отметить выполненной'}" title="${m.done?'Отменить выполнение':'Отметить выполненной'}">${m.done?'✓':''}</button><div style="min-width:0;flex:1"><div class="missiontitle" style="${m.done?'text-decoration:line-through;color:var(--dis)':''}">${esc(m.title)}</div><div class="missionmeta"><i class="cdot" style="background:${catColor(m.category)}"></i><span>${esc(categories[m.category]||m.category)}</span> · <span>${m.repeat==='daily'?'Каждый день':'Однократно'}</span></div></div><span class="xp">${m.done?'+'+XP_PER_MISSION+' XP':XP_PER_MISSION+' XP'}</span><button class="iconbtn edit" onclick="editMission('${m.id}')" aria-label="Изменить задачу" title="Изменить"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button></div>`;
 }
 function renderMissions(){
  const todays=todaysMissions();
@@ -230,7 +231,8 @@ function renderMissions(){
 }
 function toggleMission(id){
  const m=state.missions.find(x=>x.id===id);
- if(!m||m.done)return;
+ if(!m)return;
+ if(m.done){undoMission(m);return}
  if(state.completed.filter(x=>x.date===today()).length>=DAILY_LIMIT){toast('Дневной лимит достигнут');return}
  m.done=true;state.xp+=XP_PER_MISSION;
  state.completed.push({id:m.id,title:m.title,category:m.category,date:today(),xp:XP_PER_MISSION});
@@ -238,7 +240,21 @@ function toggleMission(id){
  const msgs=[],r=rankIndex(state.xp);
  const up=r>state.lastRank;if(up){state.lastRank=r;msgs.push(i18('Новый ранг · {r}',{r:rankNames[r]}))}else msgs.push(i18('Задача выполнена · +{n} XP',{n:XP_PER_MISSION}));
  const extras=checkMedals().map(n=>['Достижение',n]);
- save();render();(window.freshSkills||[]).forEach(n=>extras.push(['Навык открыт',n]));if(window.fxBadge&&extras.length&&!matchMedia('(prefers-reduced-motion:reduce)').matches){extras.forEach(x=>fxBadge(x[0],x[1]));toast(msgs[0])}else toast(msgs.concat(extras.map(x=>i18(x[0])+' · '+i18(x[1]))).join('  ·  '));bump($('totalXp'));bump($('rankBar'));window.fxGain&&fxGain('+'+XP_PER_MISSION+' XP');if(up){bump($('rankCrest'),'rankup');window.fxRank&&fxRank(r)}
+ save();render();(window.freshSkills||[]).forEach(n=>extras.push(['Навык открыт',n]));if(window.fxBadge&&extras.length&&!matchMedia('(prefers-reduced-motion:reduce)').matches){extras.forEach(x=>fxBadge(x[0],x[1]));toast(msgs[0])}else toast(msgs.concat(extras.map(x=>i18(x[0])+' · '+i18(x[1]))).join('  ·  '));bump($('totalXp'));bump($('rankBar'));window.fxGain&&fxGain('+'+XP_PER_MISSION+' XP');window.fxSound&&fxSound('win');if(up){bump($('rankCrest'),'rankup');window.fxRank&&fxRank(r)}
+}
+function undoMission(m){
+ // отмена выполнения: возвращаем XP, очко навыка и запись истории за сегодня
+ const t=today();let i=-1;
+ for(let k=state.completed.length-1;k>=0;k--){const x=state.completed[k];if(x.id===m.id&&x.date===t){i=k;break}}
+ m.done=false;
+ let xp=0;
+ if(i>=0){
+  const e=state.completed.splice(i,1)[0];xp=Number.isFinite(+e.xp)?+e.xp:XP_PER_MISSION;
+  state.xp=Math.max(0,state.xp-xp);
+  const sk=skillMap[e.category]||'SOCIAL';state.skills[sk]=Math.max(0,(state.skills[sk]||0)-1);
+  state.lastRank=rankIndex(state.xp);
+ }
+ save();render();toast(xp?i18('Выполнение отменено · −{n} XP',{n:xp}):'Задача возвращена в список');
 }
 function openMission(m=null){
  $('modal').innerHTML=`<h3>${m?'Изменить задачу':'Новая задача'}</h3><label>Название задачи</label><input class="field" id="mTitle" maxlength="70" placeholder="Например: прочитать 10 страниц" value="${m?esc(m.title):''}"><label>Категория</label><select class="field" id="mCategory">${Object.entries(categories).map(([k,v])=>`<option value="${k}" ${m&&m.category===k?'selected':''}>${v}</option>`).join('')}</select><label>Повторение</label><select class="field" id="mRepeat"><option value="once">Однократно</option><option value="daily" ${m&&m.repeat==='daily'?'selected':''}>Каждый день</option></select><div class="row" style="margin-top:17px"><button class="btn ghost" onclick="closeModal()">Отмена</button><button class="btn" onclick="saveMission('${m?m.id:''}')">Сохранить</button></div>${m?`<button class="btn secondary small" style="margin-top:12px;color:var(--mut)" onclick="deleteMission('${m.id}')">${m.repeat==='daily'?'Удалить серию':'Удалить задачу'}</button>`:''}`;

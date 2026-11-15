@@ -129,7 +129,7 @@ label{display:block;font:11px var(--mono);letter-spacing:.06em;text-transform:up
 .cdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:1px}
 .rankcard,.phero{border:1px solid var(--line)}.stat .big{font-variant-numeric:tabular-nums}
 :focus-visible{outline:2px solid var(--acc);outline-offset:2px}.field:focus{border-color:var(--acc)}
-.nextrank:focus-visible{outline-offset:0}.check.done{cursor:default}
+.nextrank:focus-visible{outline-offset:0}.check.done{cursor:pointer}.check.done:hover{opacity:.7}
 @media(hover:hover){.btn:hover{opacity:.88}.btn.ghost:hover,.btn.secondary:hover{background:var(--bg2);opacity:1}.btn.primary:hover{opacity:.9}.iconbtn:hover{background:var(--bg2)}
  .check:not(.done):hover{background:var(--line)}.nextrank:hover,.rcard:hover,.mc:hover{border-color:var(--ink)}.nav button:not(.active):hover{color:var(--ink)}.cbtn:hover:not(:disabled),.cd:hover,.wd:hover:not(.fut){border-color:var(--ink)}.ddm button:hover,.ddm label:hover{border-color:var(--ink)}}
 .tswap *,.tswap *::before,.tswap *::after{transition:background-color .4s,color .4s,border-color .4s,fill .4s,stroke .4s!important}

@@ -253,3 +253,36 @@ const g=window.fxGain,r=window.fxRank;
 window.fxGain=function(t){g&&g(t);const e=document.querySelector('.fxg');if(e)burst(parseFloat(e.style.left)||innerWidth/2,parseFloat(e.style.top)||innerHeight/2,8)};
 window.fxRank=function(i){r&&r(i);burst(innerWidth/2,innerHeight/2,28)};
 })();
+
+/* ---------- звук победы (Web Audio, без файлов) ---------- */
+(function(){
+let ctx=null;
+function ac(){
+ if(ctx)return ctx;
+ const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;
+ try{ctx=new C()}catch(_){ctx=null}
+ return ctx;
+}
+// короткая восходящая «победная» фраза в духе Duolingo: C6 · E6 · G6 · C7
+const WIN=[[1046.5,0,.11],[1318.5,.085,.11],[1568,.17,.12],[2093,.255,.32]];
+window.fxSound=function(kind){
+ if(window.state&&state.sound==='off')return;
+ const c=ac();if(!c)return;
+ try{
+  if(c.state==='suspended')c.resume();
+  const t0=c.currentTime+.02,out=c.createGain();
+  out.gain.value=.5;out.connect(c.destination);
+  WIN.forEach(([f,at,len],i)=>{
+   const last=i===WIN.length-1,t=t0+at;
+   [['triangle',1,.34],['sine',2,.1]].forEach(([type,mul,vol])=>{
+    const o=c.createOscillator(),g=c.createGain();
+    o.type=type;o.frequency.value=f*mul;
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(vol*(last?1:.85),t+.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+len+(last?.18:.05));
+    o.connect(g);g.connect(out);o.start(t);o.stop(t+len+.3);
+   });
+  });
+ }catch(_){}
+};
+})();

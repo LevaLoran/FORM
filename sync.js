@@ -24,7 +24,12 @@ function mergeMissions(B,L,R){
   const out=[];
   new Set([...lm.keys(),...rm.keys()]).forEach(id=>{
     const l=lm.get(id),r=rm.get(id),b=bm.get(id);
-    if(l&&r){const m={...(b&&eq(l,b)?r:l)};m.done=!!(l.done||r.done);out.push(m)} // выполнение побеждает
+    if(l&&r){
+      const m={...(b&&eq(l,b)?r:l)};
+      // отмена выполнения на одном устройстве сохраняется; если изменили оба — выполнение побеждает
+      if(b){const bd=!!b.done,lc=!!l.done!==bd,rc=!!r.done!==bd;m.done=(lc&&!rc)?!!l.done:(rc&&!lc)?!!r.done:!!(l.done||r.done)}
+      else m.done=!!(l.done||r.done);
+      out.push(m)}
     else{
       const x=l||r;
       // удалено на другом устройстве и здесь не менялось → удаляем; новое или изменённое → оставляем
@@ -47,16 +52,21 @@ function mergeDocs(B,L,R){
       if(lc&&!rc)return L[k];if(rc&&!lc)return R[k];if(!lc&&!rc)return R[k]}
     return newer[k];
   };
-  ['callsign','theme','avatar','avatarOrig','lang','anim'].forEach(k=>{const v=scalar(k);if(v!==undefined)o[k]=v});
+  ['callsign','theme','avatar','avatarOrig','lang','anim','sound'].forEach(k=>{const v=scalar(k);if(v!==undefined)o[k]=v});
   o.created=L.created<R.created?L.created:R.created;
   o.missions=mergeMissions(B&&B.missions,L.missions,R.missions);
   const lk=new Set(L.completed.map(keyC)),rk=new Set(R.completed.map(keyC));
   const H=L.xp>=R.xp?L:R,O=H===L?R:L,hk=H===L?lk:rk;
   const onlyO=O.completed.filter(x=>!hk.has(keyC(x)));
-  o.completed=[...H.completed,...onlyO].sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
-  o.xp=H.xp+sum(onlyO); // опыт не дублируется: добавляем только задания, которых нет в «старшей» копии
+  // записи, удалённые (отменённые) на одной из сторон относительно базы, не возвращаются слиянием
+  const del=new Set();
+  if(B)B.completed.forEach(x=>{const k=keyC(x);if(!lk.has(k)||!rk.has(k))del.add(k)});
+  const comb=[...H.completed,...onlyO],removed=comb.filter(x=>del.has(keyC(x)));
+  o.completed=comb.filter(x=>!del.has(keyC(x))).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+  o.xp=Math.max(0,H.xp+sum(onlyO)-sum(removed)); // опыт не дублируется: добавляем только задания, которых нет в «старшей» копии
   o.skills={...H.skills};
   onlyO.forEach(x=>{const k=skillMap[x.category]||'SOCIAL';o.skills[k]=(o.skills[k]||0)+1});
+  removed.forEach(x=>{const k=skillMap[x.category]||'SOCIAL';o.skills[k]=Math.max(0,(o.skills[k]||0)-1)});
   o.unlocked=[...new Set([...L.unlocked,...R.unlocked])];
   o.treeSeen=[...new Set([...(L.treeSeen||[]),...(R.treeSeen||[])])];
   o.medalDates={...R.medalDates,...L.medalDates};
