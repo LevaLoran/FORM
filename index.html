@@ -130,6 +130,9 @@
       <div class="sectiontitle"><span>Данные и резервная копия</span></div>
       <div class="sub" id="dataInfo" style="line-height:1.7"></div>
       <details class="dd"><summary>Сохранить или восстановить данные</summary><div class="ddm"><button onclick="exportData()">Экспорт в файл</button><label>Импорт из файла<input type="file" accept="application/json" hidden onchange="importData(event)"></label></div></details>
+      <div class="sectiontitle"><span>Сброс XP</span></div>
+      <div class="sub" style="line-height:1.7">Удалить выполненные задачи и XP за выбранный период</div>
+      <div class="acc" id="xpResetList"></div>
       <div class="sectiontitle"><span>О приложении</span></div>
       <div class="acc"><div class="row"><span>FORM.</span><span class="tiny"><span>Версия</span> <span id="appVer"></span></span></div></div>
     </section>
