@@ -17,6 +17,7 @@
   <meta name="color-scheme" content="light dark">
   <title>FORM. — Shape yourself</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="social.css">
 </head>
 <body>
 <div id="splash" aria-hidden="true"><svg viewBox="0 0 512 512"><circle class="r" cx="256" cy="256" r="158"/><circle class="d" style="--i:0" cx="256.0" cy="98.0" r="16"/><circle class="d" style="--i:1" cx="335.0" cy="119.2" r="16"/><circle class="d" style="--i:2" cx="392.8" cy="177.0" r="16"/><circle class="d" style="--i:3" cx="414.0" cy="256.0" r="16"/><circle class="d" style="--i:4" cx="392.8" cy="335.0" r="16"/><circle class="d" style="--i:5" cx="335.0" cy="392.8" r="16"/><circle class="d" style="--i:6" cx="256.0" cy="414.0" r="16"/><circle class="d" style="--i:7" cx="177.0" cy="392.8" r="16"/><circle class="d" style="--i:8" cx="119.2" cy="335.0" r="16"/><circle class="d" style="--i:9" cx="98.0" cy="256.0" r="16"/><circle class="d" style="--i:10" cx="119.2" cy="177.0" r="16"/><circle class="d" style="--i:11" cx="177.0" cy="119.2" r="16"/><circle class="d" style="--i:12" cx="303.5" cy="173.7" r="13"/><circle class="d" style="--i:13" cx="351.0" cy="256.0" r="13"/><circle class="d" style="--i:14" cx="303.5" cy="338.3" r="13"/><circle class="d" style="--i:15" cx="208.5" cy="338.3" r="13"/><circle class="d" style="--i:16" cx="161.0" cy="256.0" r="13"/><circle class="d" style="--i:17" cx="208.5" cy="173.7" r="13"/><circle class="d c" style="--i:18" cx="256" cy="256" r="26"/></svg><div class="sp-word"><span style="--i:0">F</span><span style="--i:1">O</span><span style="--i:2">R</span><span style="--i:3">M</span><span style="--i:4" class="p">.</span></div><div class="sp-tag">SHAPE YOURSELF</div></div>
@@ -52,7 +53,7 @@
 </div>
 <div class="app">
   <div id="skel" aria-hidden="true"><i class="sk w40"></i><i class="sk blk"></i><div class="sk-row"><i class="sk"></i><i class="sk"></i></div><i class="sk w70"></i><i class="sk line"></i><i class="sk line"></i><i class="sk line"></i></div>
-  <header><div><div class="brand">FORM<em>.</em></div><div class="status">SHAPE YOURSELF</div></div><div class="topright"><span id="dateTop" class="tiny"></span><button class="avslot" data-size="32" onclick="showScreen('settings')" aria-label="Настройки"></button><button class="syncdot" id="syncDot" hidden aria-label="Синхронизация"></button><button class="iconbtn" id="themeBtn" onclick="toggleTheme()" aria-label="Тёмная тема" aria-pressed="false" title="Светлая / тёмная тема"><svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg><svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg></button></div></header>
+  <header><div><div class="brand">FORM<em>.</em></div><div class="status">SHAPE YOURSELF</div></div><div class="topright"><span id="dateTop" class="tiny"></span><button class="avslot" data-size="32" onclick="showScreen('settings')" aria-label="Настройки"></button><button class="syncdot" id="syncDot" hidden aria-label="Синхронизация"></button><button class="iconbtn bell" id="bellBtn" onclick="FormSocial.go('notifs')" aria-label="Уведомления" title="Уведомления"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0"/></svg><i class="nbadge" id="bellBadge" hidden></i></button><button class="iconbtn" id="themeBtn" onclick="toggleTheme()" aria-label="Тёмная тема" aria-pressed="false" title="Светлая / тёмная тема"><svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg><svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg></button></div></header>
 
   <main>
     <section id="dashboard" class="screen active">
@@ -107,6 +108,8 @@
     <section id="profile" class="screen">
       <div class="heading">Профиль</div>
       <div class="phero"><div class="row start"><button class="avslot heroav" data-size="72" data-edit="1" aria-label="Изменить аватар"></button><div style="flex:1;min-width:0"><div id="callsignView" class="pcall">ПОЛЬЗОВАТЕЛЬ</div><div id="profileRank" class="prank"></div></div><div class="crest" id="profileCrest"></div></div><div id="profileXp" class="pxp">0 XP</div><div class="sub" id="profileNext"></div><div class="progress"><i id="profileBar" style="width:0%"></i></div><div class="row" style="margin-top:16px"><span class="tiny">С <span id="createdAt"></span></span><span style="display:flex;gap:8px"><button class="btn ghost small" style="color:#fff;border-color:#fff" onclick="openAvatar()">Фото</button><button class="btn ghost small" style="color:#fff;border-color:#fff" onclick="editProfile()">Имя</button></span></div></div>
+      <div class="acc idcard" id="myIdCard"></div>
+      <div class="proact"><button class="btn small" type="button" onclick="FormSocial.openEditor()">Редактировать профиль</button><button class="btn small secondary" type="button" onclick="FormSocial.openPreview('stranger')">Как видят другие</button><button class="btn small secondary" type="button" onclick="FormSocial.go('privacy')">Приватность</button></div>
       <div class="stats"><div class="stat"><div class="tiny">Задач</div><div class="big" id="profileMissions">0</div></div><div class="stat"><div class="tiny">Лучшая серия</div><div class="big" id="bestStreak">0</div></div><div class="stat"><div class="tiny">Награды</div><div class="big" id="profileMedals">0 / 7</div></div></div>
       <div class="sectiontitle"><span>Награды</span><span id="profMedalCount"></span></div><div class="mgrid" id="profMedals"></div>
       <div class="row" style="gap:8px;margin-top:18px"><button class="btn ghost small" style="flex:1" onclick="showScreen('achievements')">Награды</button><button class="btn ghost small" style="flex:1" onclick="showScreen('stats')">Статистика</button><button class="btn ghost small" style="flex:1" onclick="showScreen('history')">История</button></div>
@@ -119,6 +122,8 @@
       <div class="acc set-prof"><button class="avslot" data-size="56" data-edit="1" aria-label="Изменить аватар"></button><div class="set-name"><label for="setName" class="tiny">Имя</label><input class="field" id="setName" maxlength="18" autocomplete="off" spellcheck="false"></div></div>
       <div class="sectiontitle"><span>Аккаунт</span></div>
       <div class="acc" id="accountCard"></div>
+      <div class="sectiontitle"><span>Социальное</span></div>
+      <div class="acc"><div class="srow"><div><b>Профиль</b><div class="tiny">Аватар, баннер, о себе, ссылки</div></div><button class="btn small secondary" type="button" onclick="FormSocial.openEditor()">Открыть</button></div><div class="srow"><div><b>Приватность</b><div class="tiny">Заявки, статус, видимость профиля, блокировки</div></div><button class="btn small secondary" type="button" onclick="FormSocial.go('privacy')">Открыть</button></div></div>
       <div class="sectiontitle"><span>Внешний вид</span></div>
       <div class="acc">
         <div class="srow"><div><b>Тема</b><div class="tiny">Оформление интерфейса</div></div><div class="seg" id="segTheme" role="radiogroup"><button type="button" role="radio" data-v="light">Светлая</button><button type="button" role="radio" data-v="dark">Тёмная</button></div></div>
@@ -142,6 +147,36 @@
       <div class="row tiny"><span>Выполнено задач</span><span id="historyCount">0</span></div>
       <div id="historyList"></div>
     </section>
+    <section id="friends" class="screen">
+      <div class="heading">Друзья</div>
+      <div class="frtabs" id="frTabs" role="tablist"></div>
+      <div id="frBody"></div>
+    </section>
+
+    <section id="userprofile" class="screen">
+      <div class="subhead"><button class="btn ghost small" type="button" data-act="back">‹ Назад</button></div>
+      <div class="heading" id="userHead">Профиль</div>
+      <div class="uprev" id="userPrev" hidden><div class="seg full" role="radiogroup" style="grid-template-columns:1fr 1fr"><button type="button" role="radio" data-as="stranger" class="on" aria-checked="true">Любой пользователь</button><button type="button" role="radio" data-as="friend" aria-checked="false">Друг</button></div></div>
+      <div id="userBody"></div>
+    </section>
+
+    <section id="notifs" class="screen">
+      <div class="subhead"><button class="btn ghost small" type="button" data-act="back">‹ Назад</button><button class="btn ghost small" type="button" id="notifClear">Очистить</button></div>
+      <div class="heading">Уведомления</div>
+      <div id="notifBody"></div>
+    </section>
+
+    <section id="privacy" class="screen">
+      <div class="subhead"><button class="btn ghost small" type="button" data-act="back">‹ Назад</button></div>
+      <div class="heading">Приватность</div>
+      <div id="privBody"></div>
+    </section>
+
+    <section id="profedit" class="screen">
+      <div class="subhead"><button class="btn ghost small" type="button" data-act="back">‹ Назад</button><button class="btn small" type="button" id="peSave">Сохранить</button></div>
+      <div class="heading">Редактор профиля</div>
+      <div id="peBody"></div>
+    </section>
   </main>
 </div>
 
@@ -151,6 +186,7 @@
   <button data-screen="missions" onclick="showScreen('missions')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>Задачи</button>
   <button data-screen="ranks" onclick="showScreen('ranks')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>Ранги</button>
   <button data-screen="skills" onclick="showScreen('skills')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M8 6h8M7.2 7.8 11 16.2M16.8 7.8 13 16.2"/></svg>Навыки</button>
+  <button data-screen="friends" onclick="showScreen('friends')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="8.5" r="3"/><path d="M3.5 19c.5-3.5 2.7-5.2 5.5-5.2s5 1.7 5.5 5.2"/><path d="M15.5 5.8a3 3 0 0 1 0 5.4M17.5 14.2c1.9.6 2.8 2.3 3 4.8"/></svg><i class="nbadge" id="navFrBadge" hidden></i>Друзья</button>
   <button class="dk" data-screen="achievements" onclick="showScreen('achievements')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5v1a3 3 0 0 0 3 3M16 6h3v1a3 3 0 0 1-3 3M12 13v4M8 20h8"/></svg>Награды</button>
   <button class="dk" data-screen="stats" onclick="showScreen('stats')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>Статистика</button>
   <button class="mo" data-screen="profile" onclick="showScreen('profile')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="9" r="3.5"/><path d="M5 20c1-4 4-5.5 7-5.5s6 1.500 7 5.5"/></svg>Профиль</button>
@@ -168,5 +204,6 @@
 <script src="sync.js"></script>
 <script src="upload.js"></script>
 <script src="settings.js"></script>
+<script src="social.js"></script>
 <script src="auth.js"></script>
 </body></html>

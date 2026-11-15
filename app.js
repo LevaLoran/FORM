@@ -98,7 +98,7 @@ function normalize(raw){
  return s;
 }
 let state=load();
-const APP_VERSION='Бета 0.13',DB_NAME='lifeProtocolDB',DB_VER=1;
+const APP_VERSION='Бета 0.14',DB_NAME='lifeProtocolDB',DB_VER=1;
 let dbp=null,ready=false,idbOk=true;
 const getDb=()=>dbp||(dbp=new Promise((res,rej)=>{const r=indexedDB.open(DB_NAME,DB_VER);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('kv'))r.result.createObjectStore('kv')};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}));
 const idbGet=k=>getDb().then(db=>new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}));
@@ -116,6 +116,7 @@ function save(){
  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}catch(e){}
  if(idbOk)idbSet(IDB_KEY,state).catch(()=>{idbOk=false;toast('IndexedDB недоступна: данные в localStorage')});
  if(window.FormSync)FormSync.changed(); // изменения уходят в облако автоматически
+ if(window.FormSocial)FormSocial.touch(); // публичный профиль обновляется с небольшой задержкой
 }
 /* Применить данные, пришедшие из облака (без повторной отправки) */
 window.formApplyState=function(d){
@@ -371,7 +372,7 @@ function renderHistory(){
 }
 
 /* ---------- Навигация и модалки ---------- */
-const parentScreen={achievements:'profile',stats:'profile',history:'profile',settings:'profile'};
+const parentScreen={achievements:'profile',stats:'profile',history:'profile',settings:'profile',userprofile:'friends',profedit:'profile',privacy:'profile'};
 function showScreen(id){
  const nb=[...document.querySelectorAll('.nav button')].find(x=>x.dataset.screen===id&&x.offsetParent!==null),navId=nb?id:(parentScreen[id]||id);
  document.querySelectorAll('.screen').forEach(x=>x.classList.toggle('active',x.id===id));
@@ -379,6 +380,7 @@ function showScreen(id){
  window.scrollTo({top:0,behavior:'smooth'});
  if(id==='dashboard')generateBriefing();
  if(id==='settings'&&window.renderSettings)renderSettings();
+ if(window.FormSocial)FormSocial.onScreen(id);
  if(id==='skills'){treeApply();setTimeout(()=>pulse.clear(),2000)}
 }
 function showModal(){$('modalBack').classList.add('show')}
@@ -388,7 +390,7 @@ function closeModal(){
 }
 function openSettings(){showScreen('settings')}
 function saveSettings(){}
-function editProfile(){openSettings()}
+function editProfile(){if(window.FormSocial&&FormSocial.me)FormSocial.openEditor();else openSettings()}
 
 /* ---------- Экспорт / импорт ---------- */
 function exportData(){
