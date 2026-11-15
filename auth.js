@@ -45,7 +45,7 @@ function showLogin(problem){
   if(problem==='config')say('Вход временно недоступен: приложение ещё не подключено к серверу. Подключение выполняет владелец.');
   else if(problem==='lib')say('Не удалось загрузить модуль входа. Проверьте интернет и обновите страницу.');
   else if(url.code==='otp_expired'||/expired/i.test(urlErr))say('Ссылка устарела или уже использована. Введите почту и нажмите «Отправить письмо ещё раз».');
-  else if(urlErr)say('Вход не выполнен: '+urlErr);
+  else if(urlErr)say(i18('Вход не выполнен: {e}',{e:urlErr}));
   else say('');
 }
 function setMode(m){
@@ -112,7 +112,7 @@ async function submitMail(ev){
       if(error)throw error;
       if(data.session){busy(null);return enter(data.user)} // подтверждение почты отключено: аккаунт сразу готов
       if(data.user&&Array.isArray(data.user.identities)&&!data.user.identities.length){busy(null);return say('Этот адрес уже зарегистрирован. Войдите или восстановите пароль.')}
-      busy(null);setMode('in');pendingMail=email;showResend(true);say('Письмо с подтверждением отправлено на '+email+'. Откройте ссылку из письма (проверьте и «Спам»), затем войдите.',true);
+      busy(null);setMode('in');pendingMail=email;showResend(true);say(i18('Письмо с подтверждением отправлено на {e}. Откройте ссылку из письма (проверьте и «Спам»), затем войдите.',{e:email}),true);
     }else{
       const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
       if(error)throw error;
@@ -127,12 +127,12 @@ async function resend(){
   const email=($('auEmail').value.trim()||pendingMail);
   if(!EMAIL.test(email))return say('Введите адрес почты, на который нужно отправить письмо.');
   const wait=60000-(Date.now()-resendAt);
-  if(wait>0)return say('Подождите '+Math.ceil(wait/1000)+' с перед повторной отправкой.');
+  if(wait>0)return say(i18('Подождите {n} с перед повторной отправкой.',{n:Math.ceil(wait/1000)}));
   say('');busy('mail');
   try{
     const {error}=await sb.auth.resend({type:'signup',email,options:{emailRedirectTo:SITE}});
     if(error)throw error;
-    resendAt=Date.now();say('Письмо отправлено повторно на '+email+'. Ссылка действует ограниченное время.',true);
+    resendAt=Date.now();say(i18('Письмо отправлено повторно на {e}. Ссылка действует ограниченное время.',{e:email}),true);
   }catch(e){say(human(e))}
   busy(null);
 }
@@ -179,7 +179,7 @@ async function enter(u){
 function renderAccount(){
   const el=$('accountCard');if(!el||!user)return;
   const m=user.user_metadata||{},prov=(user.app_metadata&&user.app_metadata.provider)||'',name=m.full_name||m.name||m.user_name||'',mail=user.email||m.email||'';
-  el.innerHTML=`<div class="row start"><div style="min-width:0"><div class="acc-n">${esc(name||mail||'Аккаунт')}</div><div class="tiny" style="word-break:break-all">${esc(mail)}${prov?(mail?' · ':'')+esc(PROV[prov]||prov):''}</div></div><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">${prov==='email'?'<button class="btn ghost small" id="passBtn">Пароль</button>':''}<button class="btn ghost small" id="signOutBtn">Выйти</button></span></div>`;
+  el.innerHTML=`<div class="row start"><div style="min-width:0"><div class="acc-n" data-nt>${esc(name||mail||i18('Аккаунт'))}</div><div class="tiny" style="word-break:break-all"><span data-nt>${esc(mail)}</span>${prov?(mail?' · ':'')+'<span>'+esc(PROV[prov]||prov)+'</span>':''}</div></div><span style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">${prov==='email'?'<button class="btn ghost small" id="passBtn">Пароль</button>':''}<button class="btn ghost small" id="signOutBtn">Выйти</button></span></div>`;
   $('signOutBtn').onclick=window.formSignOut;
   const pb=$('passBtn');if(pb)pb.onclick=openPass;
 }

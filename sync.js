@@ -47,7 +47,7 @@ function mergeDocs(B,L,R){
       if(lc&&!rc)return L[k];if(rc&&!lc)return R[k];if(!lc&&!rc)return R[k]}
     return newer[k];
   };
-  ['callsign','theme','avatar','avatarOrig'].forEach(k=>{const v=scalar(k);if(v!==undefined)o[k]=v});
+  ['callsign','theme','avatar','avatarOrig','lang','anim'].forEach(k=>{const v=scalar(k);if(v!==undefined)o[k]=v});
   o.created=L.created<R.created?L.created:R.created;
   o.missions=mergeMissions(B&&B.missions,L.missions,R.missions);
   const lk=new Set(L.completed.map(keyC)),rk=new Set(R.completed.map(keyC));
@@ -83,7 +83,7 @@ const TXT={synced:'Синхронизировано',syncing:'Синхрониз
 function setStatus(s,msg){
   status=s;errMsg=msg||'';if(s==='synced')lastOk=Date.now();
   const dot=$('syncDot'),info=$('syncInfo');
-  const t=s==='synced'&&lastOk?TXT.synced+' · '+new Date(lastOk).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}):(s==='error'&&errMsg?errMsg:TXT[s]||'');
+  const t=s==='synced'&&lastOk?i18('Синхронизировано · {t}',{t:new Date(lastOk).toLocaleTimeString(loc(),{hour:'2-digit',minute:'2-digit'})}):(s==='error'&&errMsg?i18(errMsg):i18(TXT[s]||''));
   if(dot){dot.hidden=false;dot.dataset.s=s;dot.title=t;dot.setAttribute('aria-label',t)}
   if(info)info.textContent=t;
 }
@@ -110,7 +110,7 @@ function ask(L,R){
   return new Promise(res=>{
     asking=true;
     const el=document.createElement('div');el.id='syncAsk';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
-    const line=(t,d)=>'<div class="sa-l"><b>'+t+'</b><span>'+d.xp+' XP · задач выполнено: '+d.completed.length+'</span></div>';
+    const line=(t,d)=>'<div class="sa-l"><b>'+t+'</b><span>'+esc(i18('{xp} XP · задач выполнено: {n}',{xp:d.xp,n:d.completed.length}))+'</span></div>';
     el.innerHTML='<div class="sa-box"><h3>Данные в облаке</h3><p class="sub">На этом устройстве уже есть прогресс, а в облаке сохранён другой. Ничего не будет удалено без вашего выбора.</p>'+line('Это устройство',L)+line('Облако',R)+
       '<button class="btn primary block" data-c="merge">Объединить (рекомендуется)</button><button class="btn block" data-c="cloud">Взять из облака</button><button class="btn ghost block" data-c="local">Оставить с этого устройства</button>'+
       '<p class="tiny muted">Выбранный вариант применится к аккаунту на всех устройствах. Предыдущая версия сохранится в резервных копиях.</p></div>';
@@ -197,7 +197,7 @@ async function openBackups(){
   });
 }
 async function restore(id,el){
-  if(!confirm('Вернуть эту версию на всех устройствах? Текущая версия сохранится в копиях.'))return;
+  if(!confirm(i18('Вернуть эту версию на всех устройствах? Текущая версия сохранится в копиях.')))return;
   try{
     const {data,error}=await sb.from('user_data_backups').select('data').eq('id',id).eq('user_id',uid).single();
     if(error)throw error;
@@ -210,7 +210,7 @@ async function restore(id,el){
       if(up.data&&up.data.length===1){rev=up.data[0].rev;base=M;await saveMeta();applyLocal(M);setStatus('synced');if(el)el.remove();toast('Версия восстановлена');return}
     }
     toast('Не удалось восстановить: повторите');
-  }catch(e){toast(isNet(e)?'Нет соединения':'Не удалось восстановить версию')}
+  }catch(e){toast(i18(isNet(e)?'Нет соединения':'Не удалось восстановить версию'))}
 }
 
 /* ---------- интерфейс ---------- */
@@ -243,7 +243,7 @@ async function start(client,user){
 }
 window.FormSync={
   start,
-  changed(){ver++;if(!started)return;if(status!=='syncing')setStatus('pending');schedule(1200)},
+  changed(){if(started&&base&&!hasLocal())return;ver++;if(!started)return;if(status!=='syncing')setStatus('pending');schedule(1200)},
   async flush(){if(!started)return;clearTimeout(tm);await Promise.race([sync(),new Promise(r=>setTimeout(r,4000))])},
   openBackups,
   _merge:mergeDocs

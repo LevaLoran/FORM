@@ -2,7 +2,7 @@
 'use strict';
 const q=id=>document.getElementById(id),P=n=>String(n).padStart(2,'0');
 const RM=()=>!!(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches);
-const MN=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const mn=i=>{const x=new Date(2000,i,1).toLocaleDateString(loc(),{month:'long'});return x.charAt(0).toUpperCase()+x.slice(1)};
 const K=(y,m,d)=>y+'-'+P(m+1)+'-'+P(d);
 let cur=null,sel=null,dir=0,E=null;
 /* ---------- учёт планов дня (для «не выполнено») ---------- */
@@ -15,14 +15,14 @@ window.noteDay=function(){
 const info=k=>{const l=state.completed.filter(x=>x.date===k),d=state.days&&state.days[k];return{l,n:l.length,xp:l.reduce((s,x)=>s+x.xp,0),p:d?d.p:null}};
 window.dayHTML=function(k){
  const i=info(k),t=today(),dt=new Date(k+'T12:00:00');
- let lab=dt.toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long',year:'numeric'});lab=lab.charAt(0).toUpperCase()+lab.slice(1);
+ let lab=dt.toLocaleDateString(loc(),{weekday:'long',day:'numeric',month:'long',year:'numeric'});lab=lab.charAt(0).toUpperCase()+lab.slice(1);
  const meds=Object.keys(state.medalDates||{}).filter(n=>state.medalDates[n]===k&&state.unlocked.includes(n));
  const pct=Math.min(100,Math.round(i.n/DAILY_LIMIT*100));
- const st=i.n===0?(k>t?'впереди':'нет активности'):(i.p&&i.n>=i.p?'день закрыт':'частично выполнено');
- const left=i.p!=null&&i.p>i.n&&k<=t?' · '+(k<t?'не выполнено':'осталось')+': '+(i.p-i.n):'';
+ const st=i18(i.n===0?(k>t?'впереди':'нет активности'):(i.p&&i.n>=i.p?'день закрыт':'частично выполнено'));
+ const left=i.p!=null&&i.p>i.n&&k<=t?' · '+i18(k<t?'не выполнено':'осталось')+': '+(i.p-i.n):'';
  return `<h3>${esc(lab)}</h3><div class="dstat"><div><b>${i.n}${i.p!=null?' / '+i.p:''}</b><span>ВЫПОЛНЕНО</span></div><div><b>+${i.xp}</b><span>XP</span></div><div><b>${pct}%</b><span>АКТИВНОСТЬ</span></div></div><div class="progress"><i style="width:${pct}%"></i></div><div class="tiny muted" style="margin:6px 0 10px">${st}${left}</div>`
  +i.l.map(x=>`<div class="mission"><div style="flex:1"><strong>${esc(x.title)}</strong><div class="missionmeta">${esc(categories[x.category]||x.category)}</div></div><span class="xp">+${x.xp} XP</span></div>`).join('')
- +(meds.length?'<div class="chips">'+meds.map(n=>`<span class="tag">● ${esc(n)}</span>`).join('')+'</div>':'');
+ +(meds.length?'<div class="chips">'+meds.map(n=>`<span class="tag">● ${esc(i18(n))}</span>`).join('')+'</div>':'');
 };
 window.renderCalendar=function(){
  const el=q('monthGraph');if(!el)return;
@@ -44,8 +44,8 @@ window.renderCalendar=function(){
  let yr='',mx=1;const ys=[];
  for(let i=11;i>=0;i--){const dd=new Date(ty,tm-i,1),p2=dd.getFullYear()+'-'+P(dd.getMonth()+1);
   const v=state.completed.reduce((s,x)=>x.date.slice(0,7)===p2?s+x.xp:s,0);mx=Math.max(mx,v);ys.push([dd,p2,v])}
- ys.forEach(([dd,p2,v])=>{yr+=`<button class="ym${p2===pre?' on':''}" data-jm="${dd.getFullYear()}-${dd.getMonth()}" aria-label="${MN[dd.getMonth()]} ${dd.getFullYear()}: ${v} XP"><i style="height:${Math.max(6,v/mx*100)}%"></i><span>${MN[dd.getMonth()].slice(0,1)}</span></button>`});
- el.innerHTML=`<div class="cal"><div class="chead"><button class="cbtn" data-c="-12" aria-label="Год назад"${atMin?' disabled':''}>«</button><button class="cbtn" data-c="-1" aria-label="Предыдущий месяц"${atMin?' disabled':''}>‹</button><div class="ctitle">${MN[m]} ${y}</div><button class="cbtn" data-c="1" aria-label="Следующий месяц"${atMax?' disabled':''}>›</button><button class="cbtn" data-c="12" aria-label="Год вперёд"${atMax?' disabled':''}>»</button></div>`
+ ys.forEach(([dd,p2,v])=>{yr+=`<button class="ym${p2===pre?' on':''}" data-jm="${dd.getFullYear()}-${dd.getMonth()}" aria-label="${mn(dd.getMonth())} ${dd.getFullYear()}: ${v} XP"><i style="height:${Math.max(6,v/mx*100)}%"></i><span>${mn(dd.getMonth()).slice(0,1)}</span></button>`});
+ el.innerHTML=`<div class="cal"><div class="chead"><button class="cbtn" data-c="-12" aria-label="Год назад"${atMin?' disabled':''}>«</button><button class="cbtn" data-c="-1" aria-label="Предыдущий месяц"${atMin?' disabled':''}>‹</button><div class="ctitle">${mn(m)} ${y}</div><button class="cbtn" data-c="1" aria-label="Следующий месяц"${atMax?' disabled':''}>›</button><button class="cbtn" data-c="12" aria-label="Год вперёд"${atMax?' disabled':''}>»</button></div>`
  +`<div class="cwd">${['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(x=>`<span>${x}</span>`).join('')}</div><div class="cgrid${dir?(dir>0?' slr':' sll'):''}" id="cgrid">${cells}</div>`
  +`<div class="cmeta"><span><b>${ad}</b> акт. дней</span><span><b>${ms}</b> задач</span><span><b>${mxp}</b> XP</span><button class="cbtn wide" data-c="0">Сегодня</button></div>`
  +`<div class="dpanel" id="dpanel">${sel&&sel.slice(0,7)===pre?window.dayHTML(sel):'<div class="tiny muted">Нажмите на день, чтобы увидеть подробности</div>'}</div>`
@@ -72,15 +72,15 @@ function pickDay(k){
 /* ---------- аватары ---------- */
 const V=300,ACCEPT='image/*,.heic,.heif,.avif';
 const isImg=f=>/^image\//.test(f.type)||/\.(jpe?g|png|webp|heic|heif|avif|gif)$/i.test(f.name);
-const dflt=()=>{const ch=(String(state.callsign||'O').trim().charAt(0)||'O').toUpperCase();return `<svg viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" style="fill:var(--surf)"/><path d="M24 8 37 13.5v9.5c0 8.5-5.5 14-13 17.5C16.500 37 11 31.500 11 23v-9.500z" fill="none" stroke="currentColor" stroke-width="1.2"/><text x="24" y="29.500" text-anchor="middle" font-family="ui-monospace,Consolas,monospace" font-size="15" font-weight="700" fill="currentColor">${esc(ch)}</text></svg>`};
+const dflt=()=>{const ch=(String(state.callsign==='ПОЛЬЗОВАТЕЛЬ'?i18('ПОЛЬЗОВАТЕЛЬ'):(state.callsign||'O')).trim().charAt(0)||'O').toUpperCase();return `<svg viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" style="fill:var(--surf)"/><path d="M24 8 37 13.5v9.5c0 8.5-5.5 14-13 17.5C16.500 37 11 31.500 11 23v-9.500z" fill="none" stroke="currentColor" stroke-width="1.2"/><text x="24" y="29.500" text-anchor="middle" font-family="ui-monospace,Consolas,monospace" font-size="15" font-weight="700" fill="currentColor">${esc(ch)}</text></svg>`};
 window.renderAvatars=function(pop){
- const ch=(String(state.callsign||'O').trim().charAt(0)||'O').toUpperCase();
+ const ch=(String(state.callsign==='ПОЛЬЗОВАТЕЛЬ'?i18('ПОЛЬЗОВАТЕЛЬ'):(state.callsign||'O')).trim().charAt(0)||'O').toUpperCase();
  const sig=(state.avatar?state.avatar.length+':'+state.avatar.slice(-20):'d')+'|'+ch;
  document.querySelectorAll('.avslot').forEach(s=>{
   if(s.dataset.sig===sig)return;s.dataset.sig=sig;
   s.innerHTML=`<span class="av${pop?' pop':''}" style="--s:${+s.dataset.size||40}px">${state.avatar?`<img alt="" decoding="async" src="${state.avatar}" onload="this.classList.add('in')">`:dflt()}</span>`;
  });
- const a=q('statCall'),b=q('statRank');if(a)a.textContent=state.callsign;if(b)b.textContent=String(rankIndex(state.xp)+1).padStart(2,'0')+' / '+rankNames[rankIndex(state.xp)];
+ const a=q('statCall'),b=q('statRank');if(a)a.textContent=state.callsign;if(b)b.textContent=String(rankIndex(state.xp)+1).padStart(2,'0')+' / '+i18(rankNames[rankIndex(state.xp)]);
 };
 async function decode(f){
  let s=null;
@@ -94,7 +94,7 @@ function avHome(){
  E=null;
  q('avBody').innerHTML=`<div style="display:grid;place-items:center;margin:16px 0"><span class="av" style="--s:112px">${state.avatar?`<img class="in" alt="" src="${state.avatar}">`:dflt()}</span></div><div class="row" style="gap:8px;flex-wrap:wrap;justify-content:flex-start"><label class="btn" style="margin:0;cursor:pointer;display:inline-block">${state.avatar?'Заменить':'Выбрать фото'}<input type="file" id="avFile" accept="${ACCEPT}" hidden></label>${state.avatar?'<button class="btn ghost" id="avDel">Удалить</button>':''}<button class="btn ghost" onclick="closeModal()">Закрыть</button></div>`;
  q('avFile').onchange=pick;
- const o=state.avatarOrig;if(o&&window.FormUpload)q('avBody').insertAdjacentHTML('beforeend','<div class="tiny muted" style="margin-top:12px">Оригинал в облаке: '+esc(o.name||'фото')+' · '+FormUpload.sizeText(o.size)+'</div>');
+ const o=state.avatarOrig;if(o&&window.FormUpload)q('avBody').insertAdjacentHTML('beforeend','<div class="tiny muted" style="margin-top:12px">'+esc(i18('Оригинал в облаке: {n} · {s}',{n:o.name||'фото',s:FormUpload.sizeText(o.size)}))+'</div>');
  const d=q('avDel');if(d)d.onclick=()=>{if(state.avatarOrig){window.FormUpload&&FormUpload.remove(state.avatarOrig.path);delete state.avatarOrig}delete state.avatar;save();window.renderAvatars();closeModal();toast('Аватар удалён')};
 }
 window.openAvatar=function(){q('modal').innerHTML='<h3>АВАТАР</h3><div class="tiny muted">JPG, PNG, WebP, HEIC · любой размер · оригинал сохраняется в облаке</div><div id="avBody"></div>';avHome();showModal()};
@@ -142,13 +142,13 @@ function crop(d,file){
 /* ---------- загрузка оригинала: прогресс, отмена, повтор ---------- */
 let UP=null;
 function upPanel(file,thumbSaved){
- const S=FormUpload.sizeText,tm=n=>n==null||!isFinite(n)?'':n<60?Math.ceil(n)+' с':Math.ceil(n/60)+' мин';
+ const S=FormUpload.sizeText,tm=n=>n==null||!isFinite(n)?'':n<60?i18('{n} с',{n:Math.ceil(n)}):i18('{n} мин',{n:Math.ceil(n/60)});
  q('modal').innerHTML='<h3>ОРИГИНАЛ</h3>'+(thumbSaved?'<div class="tiny muted" style="margin-bottom:8px">Аватар сохранён. Оригинал загружается в облако в исходном качестве.</div>':'')+
-  '<div class="up"><div class="row"><b class="upn">'+esc(file.name||'фото')+'</b><span id="upPct" class="tiny">0%</span></div><div class="upbar"><i id="upBar"></i></div><div class="tiny muted" id="upInfo">Подготовка…</div><div class="row" style="gap:8px;justify-content:flex-start;margin-top:14px;flex-wrap:wrap"><button class="btn ghost" id="upCancel">Отмена</button><button class="btn" id="upRetry" hidden>Повторить</button><button class="btn ghost" onclick="closeModal()">Закрыть</button></div></div>';
+  '<div class="up"><div class="row"><b class="upn" data-nt>'+esc(file.name||i18('фото'))+'</b><span id="upPct" class="tiny">0%</span></div><div class="upbar"><i id="upBar"></i></div><div class="tiny muted" id="upInfo">Подготовка…</div><div class="row" style="gap:8px;justify-content:flex-start;margin-top:14px;flex-wrap:wrap"><button class="btn ghost" id="upCancel">Отмена</button><button class="btn" id="upRetry" hidden>Повторить</button><button class="btn ghost" onclick="closeModal()">Закрыть</button></div></div>';
  const g=id=>q(id),old=state.avatarOrig;
  const ui=(pct,info)=>{const b=g('upBar');if(!b)return;b.style.width=pct+'%';g('upPct').textContent=Math.floor(pct)+'%';g('upInfo').textContent=info};
  UP=FormUpload.start(file,{
-  onProgress:p=>ui(p.pct,S(p.loaded)+' из '+S(p.total)+(p.speed?' · '+S(p.speed)+'/с':'')+(p.eta?' · ещё '+tm(p.eta):'')),
+  onProgress:p=>ui(p.pct,i18('{a} из {b}',{a:S(p.loaded),b:S(p.total)})+(p.speed?' · '+i18('{s}/с',{s:S(p.speed)}):'')+(p.eta?' · '+i18('ещё {t}',{t:tm(p.eta)}):'')),
   onState:(st,x)=>{
    const c=g('upCancel'),rt=g('upRetry');
    if(c)c.hidden=st!=='uploading';if(rt)rt.hidden=!(st==='error'||st==='cancelled');
@@ -158,7 +158,7 @@ function upPanel(file,thumbSaved){
    if(st==='done'){
     state.avatarOrig={path:x.path,name:String(x.name||'').slice(0,100),size:x.size,at:Date.now()};save();
     if(old&&old.path&&old.path!==x.path)FormUpload.remove(old.path); // заменённый оригинал удаляем, хранилище не растёт
-    ui(100,'Готово · '+S(x.size));toast('Оригинал загружен');UP=null;
+    ui(100,i18('Готово · {s}',{s:S(x.size)}));toast('Оригинал загружен');UP=null;
    }
   }
  });
@@ -209,8 +209,9 @@ window.toggleTheme=function(){
  const h=document.documentElement,n=h.dataset.theme==='dark'?'light':'dark';
  if(!RM()){h.classList.add('tswap');setTimeout(()=>h.classList.remove('tswap'),450)}
  h.dataset.theme=n;try{localStorage.setItem('formTheme',n)}catch(_){}sync();
- try{state.theme=n;save()}catch(_){} // тема входит в синхронизируемые данные
+ try{state.theme=n;save();window.renderSettings&&renderSettings()}catch(_){} // тема входит в синхронизируемые данные
 };
+window.applyAnim=function(on){document.documentElement.dataset.anim=on?'on':'off'};
 window.applyTheme=function(n){
  if(n!=='dark'&&n!=='light')return;
  const h=document.documentElement;if(h.dataset.theme===n)return;

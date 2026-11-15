@@ -11,7 +11,7 @@ function loadTus(){
   return new Promise((res,rej)=>{const s=document.createElement('script');s.src=TUS_SRC;s.onload=res;s.onerror=()=>rej(new Error('Не удалось загрузить модуль передачи файлов'));document.head.appendChild(s)});
 }
 const endpoint=()=>C().storageEndpoint||(String(C().supabaseUrl||'').replace(/\/$/,'')+'/storage/v1/upload/resumable');
-const sizeText=n=>n>=1073741824?(n/1073741824).toFixed(2)+' ГБ':n>=1048576?(n/1048576).toFixed(1)+' МБ':Math.max(1,Math.round(n/1024))+' КБ';
+const sizeText=n=>n>=1073741824?i18('{n} ГБ',{n:(n/1073741824).toFixed(2)}):n>=1048576?i18('{n} МБ',{n:(n/1048576).toFixed(1)}):i18('{n} КБ',{n:Math.max(1,Math.round(n/1024))});
 function human(e){
   const m=String(e&&e.message||e||''),code=e&&e.originalResponse&&e.originalResponse.getStatus&&e.originalResponse.getStatus();
   if(code===413||/exceeded the maximum allowed size|too large/i.test(m))return 'Хранилище не принимает файл такого размера: увеличьте лимит в Supabase (Storage → Settings).';
