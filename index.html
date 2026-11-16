@@ -124,6 +124,7 @@
       <div class="acc" id="accountCard"></div>
       <div class="sectiontitle"><span>Социальное</span></div>
       <div class="acc"><div class="srow"><div><b>Профиль</b><div class="tiny">Аватар, баннер, о себе, ссылки</div></div><button class="btn small secondary" type="button" onclick="FormSocial.openEditor()">Открыть</button></div><div class="srow"><div><b>Приватность</b><div class="tiny">Заявки, статус, видимость профиля, блокировки</div></div><button class="btn small secondary" type="button" onclick="FormSocial.go('privacy')">Открыть</button></div></div>
+      <div class="acc" id="ownerRow" hidden style="margin-top:10px"><div class="srow"><div><b>Owner Panel</b><div class="tiny">Теги, роли, пользователи, журнал действий</div></div><button class="btn small" type="button" onclick="FormSocial.go('owner')">Открыть</button></div></div>
       <div class="sectiontitle"><span>Внешний вид</span></div>
       <div class="acc">
         <div class="srow"><div><b>Тема</b><div class="tiny">Оформление интерфейса</div></div><div class="seg" id="segTheme" role="radiogroup"><button type="button" role="radio" data-v="light">Светлая</button><button type="button" role="radio" data-v="dark">Тёмная</button></div></div>
@@ -176,6 +177,12 @@
       <div class="subhead"><button class="btn ghost small" type="button" data-act="back">‹ Назад</button><button class="btn small" type="button" id="peSave">Сохранить</button></div>
       <div class="heading">Редактор профиля</div>
       <div id="peBody"></div>
+    </section>
+    <section id="owner" class="screen">
+      <div class="subhead"><button class="btn ghost small" type="button" data-act="back">‹ Назад</button></div>
+      <div class="heading">Owner Panel</div>
+      <div class="frtabs" id="owTabs" role="tablist"></div>
+      <div id="owBody"></div>
     </section>
   </main>
 </div>

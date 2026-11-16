@@ -159,3 +159,29 @@ textarea.field{resize:vertical;min-height:84px;font-family:inherit;line-height:1
 
 @media(max-width:380px){.pc-name{font-size:22px}.pc-main{padding:0 14px 18px}.idchip{font-size:14px}}
 @media(prefers-reduced-motion:reduce){.pcard{animation:none}}
+
+/* ===== v0.15: теги, роли, эксклюзивные рамки, Owner Panel ===== */
+.utags{display:inline-flex;gap:4px;flex-wrap:wrap;vertical-align:middle;max-width:100%}
+.utag{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:2px;font:600 10px/1 var(--mono);letter-spacing:.04em;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;border:1px solid transparent;transition:transform .2s,box-shadow .2s}
+.t-solid{background:var(--tc,var(--ink));color:var(--bg)}
+.t-solid[style]{color:#fff}
+.t-outline{border-color:var(--tc,var(--ink));color:var(--tc,var(--ink))}
+.t-dotted{border:1px dotted var(--tc,var(--ink));color:var(--tc,var(--ink))}
+.t-glow{border-color:var(--tc,var(--ink));color:var(--tc,var(--ink));box-shadow:0 0 8px color-mix(in srgb,var(--tc,var(--ink)) 45%,transparent)}
+.t-plain{padding:0 2px;color:var(--tc,var(--mut))}
+.frname,.pc-nm{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+.frname b{min-width:0}
+.rolechip{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:2px;font:600 9px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;background:var(--bg2);color:var(--mut);border:1px solid var(--line)}
+.rolechip.r-owner{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tagrow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+.tagrow .iconbtn{width:30px;height:30px;font-size:16px;line-height:1}
+.tagadd{margin-top:10px}
+.tagadd select.field{padding:9px 10px;font-size:14px;min-width:0}
+.logrow{padding:10px 0;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:2px;font-size:14px;overflow-wrap:anywhere}
+.logrow>div:nth-child(2){font:600 12px var(--mono);letter-spacing:.03em}
+
+/* эксклюзивные рамки: выдаёт только владелец */
+.f-aurora::before{background:conic-gradient(#6b5be2,#c2399a,#e05a3a,#c77b00,#1f9d63,#0b8fa6,#6b5be2);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - var(--s)*.08),#000 calc(100% - var(--s)*.08));mask:radial-gradient(farthest-side,transparent calc(100% - var(--s)*.08),#000 calc(100% - var(--s)*.08))}
+.f-crown::before{background:repeating-conic-gradient(var(--ink) 0 38deg,transparent 38deg 45deg);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - var(--s)*.09),#000 calc(100% - var(--s)*.09));mask:radial-gradient(farthest-side,transparent calc(100% - var(--s)*.09),#000 calc(100% - var(--s)*.09))}
+.f-void::before{border:calc(var(--s)*.05) solid var(--ink);box-shadow:inset 0 0 calc(var(--s)*.2) var(--pc),0 0 calc(var(--s)*.25) var(--pc)}
+html[data-anim=on] .f-aurora::before{animation:pfspin 10s linear infinite}

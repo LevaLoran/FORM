@@ -7,9 +7,10 @@ const $=id=>document.getElementById(id);
 const RM=()=>!!(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches);
 const SITE=location.origin+location.pathname.replace(/index\.html$/,'');
 const DEF_NAME='ПОЛЬЗОВАТЕЛЬ';
-const SUB=new Set(['userprofile','profedit','privacy','notifs']);
+const SUB=new Set(['userprofile','profedit','privacy','notifs','owner']);
 const NAV=[];
 let sb=null,uid=null,started=false;
+const O={tab:'users',q:'',cur:null};
 const S={me:null,friends:[],blocked:[],notifs:[],unread:0,prevUnread:null,tab:'all',viewing:null,preview:null,loadErr:null,results:null,query:'',D:null};
 
 /* ---------- ошибки ---------- */
@@ -28,7 +29,16 @@ const ERR={
   requests_closed:'Пользователь не принимает заявки в друзья',
   too_many_pending:'Слишком много отправленных заявок',
   no_request:'Заявка больше не актуальна',
-  auth_required:'Нужно войти в аккаунт'
+  auth_required:'Нужно войти в аккаунт',
+  forbidden:'Нет доступа',
+  role_invalid:'Недопустимая роль',
+  self_role:'Свою роль менять нельзя',
+  owner_protected:'Роль владельца изменить нельзя',
+  tag_invalid:'Тег: от 1 до 24 символов',
+  too_many_tags:'У пользователя уже 3 тега',
+  item_invalid:'Неизвестный предмет',
+  frame_locked:'Эта рамка вам недоступна',
+  name_reserved:'Это название совпадает с тегом другого пользователя'
 };
 function human(e){
   const m=String(e&&e.message||''),c=String(e&&e.code||'');
@@ -123,9 +133,25 @@ async function fileToCover(f,w,h){
 }
 
 /* ---------- рамки аватара ---------- */
-const FRAMES=[['none','Без рамки',0],['ring','Кольцо',0],['dots','Точки',2],['double','Двойная',4],['square','Квадрат',6],['orbit','Орбита',8],['halo','Ореол',10]];
+const FRAMES=[['none','Без рамки',0],['ring','Кольцо',0],['dots','Точки',2],['double','Двойная',4],['square','Квадрат',6],['orbit','Орбита',8],['halo','Ореол',10],['aurora','Аврора','x'],['crown','Корона','x'],['void','Пустота','x']];
 const myRank=()=>rankIndex(state.xp);
-const frameOk=f=>{const d=FRAMES.find(x=>x[0]===f);return !!d&&myRank()>=d[2]};
+const isOwner=()=>!!(S.me&&S.me.role==='owner'); // только подсказка для интерфейса: права проверяет сервер
+const frameOk=f=>{
+  const d=FRAMES.find(x=>x[0]===f);if(!d)return false;
+  if(isOwner())return true; // владельцу открыто всё
+  if(d[2]==='x')return ((S.me&&S.me.unlocked)||[]).includes(f); // эксклюзив: только выданное владельцем
+  return myRank()>=d[2];
+};
+const TAG_STYLES=[['solid','Заливка'],['outline','Контур'],['dotted','Пунктир'],['glow','Свечение'],['plain','Текст']];
+const ROLE_L={owner:'Владелец',tester:'Тестировщик',user:'Пользователь'};
+function tagsHTML(tags){
+  if(!Array.isArray(tags)||!tags.length)return '';
+  return '<span class="utags">'+tags.slice(0,3).map(t=>{
+    const st=TAG_STYLES.some(x=>x[0]===t.s)?t.s:'outline',c=/^#[0-9a-f]{6}$/i.test(t.c||'')?' style="--tc:'+t.c+'"':'';
+    return '<span class="utag t-'+st+'"'+c+' data-nt>'+esc(t.l)+'</span>';
+  }).join('')+'</span>';
+}
+const roleChip=r=>r&&r!=='user'?'<span class="rolechip r-'+esc(r)+'">'+esc(i18(ROLE_L[r]||r))+'</span>':'';
 const letter=n=>(String(n||'?').trim().charAt(0)||'?').toUpperCase();
 function avHTML(u,size,o){
   o=o||{};
@@ -155,7 +181,7 @@ function touch(){
   clearTimeout(pushTm);pushTm=setTimeout(()=>pushMine(false),2500);
 }
 function statsNow(){
-  return {rank:myRank(),xp:state.xp,tasks:state.completed.length,best:bestStreak(state),medals:medalDefs.filter(d=>medalOk(d)).map(d=>d[0])};
+  return {rank:myRank(),xp:state.xp,tasks:state.completed.length,best:bestStreak(state),medals:medalDefs.filter(d=>isOwner()||medalOk(d)).map(d=>d[0])};
 }
 async function pushMine(first){
   if(pushBusy||!sb||!S.me)return;
@@ -184,10 +210,11 @@ async function pushMine(first){
 /* ---------- карточка с моим FORM ID ---------- */
 function idChip(id){return '<button type="button" class="idchip" data-act="copyid" data-id="'+esc(id)+'" aria-label="'+esc(i18('Копировать ID'))+'" data-nt><b>'+esc(id)+'</b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="1.5"/><path d="M5 15V6.5A1.5 1.5 0 0 1 6.5 5H15"/></svg></button>'}
 function renderIdCard(){
+  const orow=$('ownerRow');if(orow)orow.hidden=!isOwner();
   const el=$('myIdCard');if(!el)return;
   const m=S.me;
   if(!m){el.innerHTML='<div class="tiny">'+esc(S.loadErr?human(S.loadErr):i18('Загружаю профиль…'))+'</div>';return}
-  el.innerHTML='<div class="tiny">'+esc(i18('Ваш FORM ID'))+'</div><div class="idrow">'+idChip(m.id)+'<span class="tiny" data-nt>@'+esc(m.username)+'</span></div><div class="tiny idnote">'+esc(i18('ID постоянный и не меняется. Имя пользователя и отображаемое имя можно менять.'))+'</div>';
+  el.innerHTML='<div class="tiny">'+esc(i18('Ваш FORM ID'))+'</div><div class="idrow">'+idChip(m.id)+'<span class="tiny" data-nt>@'+esc(m.username)+'</span>'+tagsHTML(m.tags)+'</div><div class="tiny idnote">'+esc(i18('ID постоянный и не меняется. Имя пользователя и отображаемое имя можно менять.'))+'</div>';
   const a=$('addMyId');if(a)a.innerHTML=el.innerHTML;
 }
 
@@ -208,12 +235,12 @@ function cardHTML(v,o){
   o=o||{};
   const th=v.theme||{},col=hex(th.color),deco=th.deco||'none';
   if(v.limited){
-    return '<div class="pcard" style="--pc:'+col+'"><div class="pc-banner" data-deco="none"></div><div class="pc-main"><div class="pc-avrow">'+avHTML({...v,color:col,frame:th.frame,online:null},88,{big:true})+'<div class="pc-act">'+(o.actions||'')+'</div></div><h2 class="pc-name" data-nt>'+esc(dispName(v))+'</h2><div class="pc-ids">'+idChip(v.id)+'<span class="tiny" data-nt>@'+esc(v.username)+'</span></div><p class="sub pc-lim">'+esc(i18('Этот пользователь ограничил просмотр профиля.'))+'</p></div></div>';
+    return '<div class="pcard" style="--pc:'+col+'"><div class="pc-banner" data-deco="none"></div><div class="pc-main"><div class="pc-avrow">'+avHTML({...v,color:col,frame:th.frame,online:null},88,{big:true})+'<div class="pc-act">'+(o.actions||'')+'</div></div><div class="pc-nm" style="margin-top:12px"><h2 class="pc-name" data-nt>'+esc(dispName(v))+'</h2>'+tagsHTML(v.tags)+'</div><div class="pc-ids">'+idChip(v.id)+'<span class="tiny" data-nt>@'+esc(v.username)+'</span></div><p class="sub pc-lim">'+esc(i18('Этот пользователь ограничил просмотр профиля.'))+'</p></div></div>';
   }
   const pinned=(v.badges&&v.badges.pinned)||[],medals=(v.badges&&v.badges.medals)||[];
   let h='<div class="pcard" data-bg="'+esc(th.bg||'none')+'" style="--pc:'+col+'"><div class="pc-banner" data-deco="'+esc(deco)+'" data-img="'+(th.banner==='image'&&safeImg(v.banner_image)?'1':'')+'"></div><div class="pc-main">';
   h+='<div class="pc-avrow">'+avHTML({...v,color:col,frame:th.frame},88,{big:true})+'<div class="pc-act">'+(o.actions||'')+'</div></div>';
-  h+='<div class="pc-title"><h2 class="pc-name" data-nt>'+esc(dispName(v))+'</h2>'+(v.badges?'<span class="pc-rank" title="'+esc(i18(rankNames[v.badges.rank]||''))+'">'+crest(Math.max(0,Math.min(MAX_RANK,v.badges.rank|0)))+'</span>':'')+'</div>';
+  h+='<div class="pc-title"><div class="pc-nm"><h2 class="pc-name" data-nt>'+esc(dispName(v))+'</h2>'+tagsHTML(v.tags)+'</div>'+(v.badges?'<span class="pc-rank" title="'+esc(i18(rankNames[v.badges.rank]||''))+'">'+crest(Math.max(0,Math.min(MAX_RANK,v.badges.rank|0)))+'</span>':'')+'</div>';
   h+='<div class="pc-ids">'+idChip(v.id)+'<span class="tiny" data-nt>@'+esc(v.username)+'</span></div>';
   if(v.online===true)h+='<div class="pc-pres on">'+esc(i18('В сети'))+'</div>';
   else if(v.online===false||v.last_seen)h+='<div class="pc-pres">'+esc(v.last_seen?i18('Был(а) в сети {t}',{t:ago(v.last_seen)}):i18('Не в сети'))+'</div>';
@@ -323,7 +350,7 @@ function rowHTML(u,kind){
     else if(u.relation==='incoming')right='<button type="button" class="btn small" data-act="accept" data-id="'+esc(u.id)+'">'+esc(i18('Принять'))+'</button>';
   }
   const sub=kind==='all'||kind==='on'?presenceLine(u):'';
-  return '<div class="frow"><button type="button" class="frmain" data-act="open" data-id="'+esc(u.id)+'">'+avHTML(u,44)+'<span class="frtxt"><b data-nt>'+esc(dispName(u))+'</b><span class="tiny" data-nt>@'+esc(u.username)+' · '+esc(u.id)+'</span>'+(sub?'<span class="frsub" data-nt>'+esc(sub)+'</span>':'')+'</span></button><span class="fract">'+right+'</span></div>';
+  return '<div class="frow"><button type="button" class="frmain" data-act="open" data-id="'+esc(u.id)+'">'+avHTML(u,44)+'<span class="frtxt"><span class="frname"><b data-nt>'+esc(dispName(u))+'</b>'+tagsHTML(u.tags)+'</span><span class="tiny" data-nt>@'+esc(u.username)+' · '+esc(u.id)+'</span>'+(sub?'<span class="frsub" data-nt>'+esc(sub)+'</span>':'')+'</span></button><span class="fract">'+right+'</span></div>';
 }
 function tabsHTML(){
   const all=friendsOnly(),on=all.filter(f=>f.online===true),pend=incoming().length+outgoing().length;
@@ -436,6 +463,7 @@ function notifLine(n,plain){
   const a=n.actor,nm=a?dispName(a):'';
   if(n.type==='friend_request')return i18('{n} хочет добавить вас в друзья',{n:nm});
   if(n.type==='friend_accepted')return i18('{n} принял(а) вашу заявку в друзья',{n:nm});
+  if(n.data&&n.data.k==='username_reset')return i18('Из соображений приватности ваше имя пользователя заменено: раньше оно было похоже на адрес почты. Новое имя можно выбрать в редакторе профиля.');
   const k=n.data&&n.data.k;
   if(k==='welcome')return plain?i18('Добро пожаловать в FORM'):i18('Добро пожаловать в FORM. У вас появился собственный FORM ID: найдите друзей, оформите профиль и настройте приватность.');
   return clean(n.data&&(n.data.title||n.data.body))||i18('Системное уведомление');
@@ -484,7 +512,7 @@ function renderPrivacy(){
   h+='<div class="sectiontitle"><span>'+esc(i18('Скрыть из профиля'))+'</span></div><p class="sub">'+esc(i18('Скрытые элементы не видит никто, кроме вас. Это те же переключатели, что и в редакторе профиля.'))+'</p><div class="acc">'+HIDE.map(x=>'<div class="srow"><span>'+esc(i18(x[1]))+'</span>'+swHTML(x[0],hide.includes(x[0]))+'</div>').join('')+'</div>';
   h+='<div class="sectiontitle"><span>'+esc(i18('Заблокированные'))+'</span><span>'+S.blocked.length+'</span></div><p class="sub">'+esc(i18('Заблокированные пользователи не могут отправлять вам заявки и взаимодействовать с вами, а ваш профиль для них недоступен.'))+'</p>';
   h+='<form id="blockForm" class="findform" autocomplete="off"><div class="row" style="gap:8px"><input class="field" id="blockQ" maxlength="20" placeholder="FORM#123456" autocapitalize="off" spellcheck="false" aria-label="FORM ID"><button class="btn secondary" type="submit">'+esc(i18('Заблокировать'))+'</button></div></form>';
-  h+=S.blocked.length?S.blocked.map(u=>'<div class="frow"><button type="button" class="frmain" data-act="open" data-id="'+esc(u.id)+'">'+avHTML(u,40,{noDot:true})+'<span class="frtxt"><b data-nt>'+esc(dispName(u))+'</b><span class="tiny" data-nt>'+esc(u.id)+'</span></span></button><span class="fract"><button type="button" class="btn small ghost" data-act="unblock" data-id="'+esc(u.id)+'">'+esc(i18('Разблокировать'))+'</button></span></div>').join(''):'<div class="empty">'+esc(i18('Список пуст.'))+'</div>';
+  h+=S.blocked.length?S.blocked.map(u=>'<div class="frow"><button type="button" class="frmain" data-act="open" data-id="'+esc(u.id)+'">'+avHTML(u,40,{noDot:true})+'<span class="frtxt"><span class="frname"><b data-nt>'+esc(dispName(u))+'</b>'+tagsHTML(u.tags)+'</span><span class="tiny" data-nt>'+esc(u.id)+'</span></span></button><span class="fract"><button type="button" class="btn small ghost" data-act="unblock" data-id="'+esc(u.id)+'">'+esc(i18('Разблокировать'))+'</button></span></div>').join(''):'<div class="empty">'+esc(i18('Список пуст.'))+'</div>';
   box.innerHTML=h;
 }
 async function setPriv(patch){
@@ -511,7 +539,7 @@ function viewFromDraft(){
   const D=S.D,m=S.me,hide=D.hide,th={color:D.color,banner:D.banner,deco:D.deco,bg:D.bg,frame:D.frame};
   if(hide.includes('banner')){th.banner='color';th.deco='none';th.bg='none'}
   const st=statsNow(),have=st.medals;
-  const v={id:m.id,username:D.username||m.username,display_name:D.display||D.username||m.username,
+  const v={id:m.id,tags:m.tags||[],username:D.username||m.username,display_name:D.display||D.username||m.username,
     avatar:state.avatar||null,avatar_thumb:state.avatar||null,theme:th,online:true,
     banner_image:D.banner_image,bg_image:D.bg_image};
   if(!hide.includes('status'))v.status=D.status;
@@ -537,7 +565,7 @@ function drawEditorParts(){
   const fr=$('peFrames');
   if(fr)fr.innerHTML=FRAMES.map(f=>{
     const ok=frameOk(f[0]);
-    return '<button type="button" class="frameopt'+(D.frame===f[0]?' on':'')+(ok?'':' lk')+'" data-f="'+f[0]+'"'+(ok?'':' disabled')+' aria-label="'+esc(i18(f[1]))+'">'+avHTML({display_name:D.display||D.username,avatar_thumb:state.avatar||null,color:D.color,frame:f[0]},46,{noDot:true})+'<span class="tiny">'+esc(ok?i18(f[1]):i18('ранг {n}',{n:pad2(f[2]+1)}))+'</span></button>';
+    return '<button type="button" class="frameopt'+(D.frame===f[0]?' on':'')+(ok?'':' lk')+'" data-f="'+f[0]+'"'+(ok?'':' disabled')+' aria-label="'+esc(i18(f[1]))+'">'+avHTML({display_name:D.display||D.username,avatar_thumb:state.avatar||null,color:D.color,frame:f[0]},46,{noDot:true})+'<span class="tiny">'+esc(ok?i18(f[1]):(f[2]==='x'?i18('Эксклюзив'):i18('ранг {n}',{n:pad2(f[2]+1)})))+'</span></button>';
   }).join('');
   drawSwatches();
   const bi=$('peBanner');
@@ -615,6 +643,79 @@ async function pickImage(kind,file){
   }catch(_){toast(i18('Не удалось обработать изображение'))}
 }
 
+
+/* ---------- Owner Panel: все действия проверяются сервером (функции admin_*) ---------- */
+async function ownerGuard(e){
+  if(String(e&&e.message)==='forbidden'){toast(i18('Нет доступа'));showScreen('dashboard');return true}
+  return false;
+}
+async function renderOwner(){
+  const tabs=$('owTabs'),box=$('owBody');if(!tabs||!box)return;
+  tabs.innerHTML=[['users','Пользователи'],['log','Журнал']].map(t=>'<button type="button" role="tab" class="frtab'+(O.tab===t[0]?' on':'')+'" aria-selected="'+(O.tab===t[0])+'" data-owtab="'+t[0]+'">'+esc(i18(t[1]))+'</button>').join('');
+  if(O.tab==='users'){
+    box.innerHTML='<form id="owForm" class="findform" role="search" autocomplete="off"><div class="row" style="gap:8px"><input class="field" id="owQ" maxlength="40" placeholder="'+esc(i18('FORM ID, @имя или имя'))+'" autocapitalize="off" spellcheck="false" aria-label="'+esc(i18('Поиск'))+'" value="'+esc(O.q)+'"><button class="btn" type="submit">'+esc(i18('Найти'))+'</button></div></form><div id="owList"><div class="empty">'+esc(i18('Загружаю…'))+'</div></div>';
+    await loadOwnerUsers();
+  }else{
+    box.innerHTML='<div id="owList"><div class="empty">'+esc(i18('Загружаю…'))+'</div></div>';
+    await loadOwnerLog();
+  }
+}
+async function loadOwnerUsers(){
+  const el=$('owList');if(!el)return;
+  let l;try{l=await rpc('admin_users',{p_q:O.q})||[]}catch(e){if(await ownerGuard(e))return;el.innerHTML='<div class="empty">'+esc(human(e))+'</div>';return}
+  el.innerHTML=l.length?'<div class="sectiontitle"><span>'+esc(i18('Пользователи'))+'</span><span>'+l.length+'</span></div>'+l.map(u=>'<div class="frow"><button type="button" class="frmain" data-ow="open" data-id="'+esc(u.id)+'">'+avHTML(u,40,{noDot:true})+'<span class="frtxt"><span class="frname"><b data-nt>'+esc(dispName(u))+'</b>'+tagsHTML(u.tags)+roleChip(u.role)+'</span><span class="tiny" data-nt>@'+esc(u.username)+' · '+esc(u.id)+'</span></span></button></div>').join(''):'<div class="empty">'+esc(i18('Никого не найдено.'))+'</div>';
+}
+function logLine(l){
+  const d=l.data||{},tg=l.target?esc(l.target):'';
+  const roleName=r=>i18(ROLE_L[r]||r);
+  switch(l.action){
+    case 'set_role':return i18('изменил(а) роль: {a} → {b}',{a:roleName(d.from),b:roleName(d.to)});
+    case 'add_tag':return i18('выдал(а) тег «{l}»',{l:clean(d.label)});
+    case 'remove_tag':return i18('снял(а) тег «{l}»',{l:clean(d.label)});
+    case 'grant':return i18('выдал(а) предмет «{i}»',{i:clean(d.item)});
+    case 'revoke':return i18('снял(а) предмет «{i}»',{i:clean(d.item)});
+    case 'bootstrap':return i18('начальная настройка прав');
+    default:return clean(l.action);
+  }
+}
+async function loadOwnerLog(){
+  const el=$('owList');if(!el)return;
+  let l;try{l=await rpc('admin_log_list',{p_limit:100})||[]}catch(e){if(await ownerGuard(e))return;el.innerHTML='<div class="empty">'+esc(human(e))+'</div>';return}
+  el.innerHTML=l.length?l.map(x=>'<div class="logrow"><div class="tiny" data-nt>'+esc(new Date(x.at).toLocaleString(loc()))+'</div><div data-nt>'+esc(clean(x.actor))+' → '+esc(clean(x.target))+'</div><div class="tiny" data-nt>'+esc(logLine(x))+'</div></div>').join(''):'<div class="empty">'+esc(i18('Журнал пуст.'))+'</div>';
+}
+const TAG_COLORS=[['','По умолчанию'],['#2f5bea','Синий'],['#c2399a','Розовый'],['#1f9d63','Зелёный'],['#e05a3a','Красный'],['#c77b00','Жёлтый']];
+async function openOwnerUser(id){
+  let d;try{d=await rpc('admin_user',{p_form_id:id})}catch(e){if(await ownerGuard(e))return;toast(human(e));return}
+  O.cur={id,data:d};
+  const u=d.user,locked=u.role==='owner'||(S.me&&u.id===S.me.id),own=u.role==='owner';
+  $('modal').innerHTML='<h3 data-nt>'+esc(dispName(u))+'</h3><div class="pc-ids" style="margin:0 0 4px">'+idChip(u.id)+roleChip(u.role)+'</div>'+
+    '<div class="tiny" style="margin:16px 0 6px">'+esc(i18('Роль'))+'</div><div class="seg full" role="radiogroup" style="grid-template-columns:1fr 1fr">'+['user','tester'].map(r=>'<button type="button" role="radio" data-ow="role" data-id="'+esc(u.id)+'" data-v="'+r+'" class="'+(u.role===r?'on':'')+'" aria-checked="'+(u.role===r)+'"'+(locked?' disabled':'')+'>'+esc(i18(ROLE_L[r]))+'</button>').join('')+'</div>'+
+    (locked?'<div class="tiny hint">'+esc(i18(own?'Роль владельца изменить нельзя.':'Свою роль менять нельзя.'))+'</div>':'')+
+    '<div class="tiny" style="margin:16px 0 6px">'+esc(i18('Теги'))+' · '+d.tags.length+' / 3</div>'+
+    (d.tags.length?d.tags.map(t=>'<div class="tagrow">'+tagsHTML([t])+'<button type="button" class="iconbtn" data-ow="rmtag" data-tid="'+(+t.id)+'" aria-label="'+esc(i18('Снять тег'))+'">×</button></div>').join(''):'<div class="tiny">'+esc(i18('Тегов нет.'))+'</div>')+
+    (d.tags.length<3?'<div class="tagadd"><input class="field" id="owLabel" maxlength="24" placeholder="'+esc(i18('Текст тега'))+'" autocomplete="off" aria-label="'+esc(i18('Текст тега'))+'"><div class="row" style="gap:8px;margin-top:6px"><select class="field" id="owStyle" aria-label="'+esc(i18('Оформление'))+'">'+TAG_STYLES.map(x=>'<option value="'+x[0]+'">'+esc(i18(x[1]))+'</option>').join('')+'</select><select class="field" id="owColor" aria-label="'+esc(i18('Цвет'))+'">'+TAG_COLORS.map(x=>'<option value="'+x[0]+'">'+esc(i18(x[1]))+'</option>').join('')+'</select></div><button type="button" class="btn small" style="margin-top:8px" data-ow="addtag" data-id="'+esc(u.id)+'">'+esc(i18('Выдать тег'))+'</button></div>':'')+
+    '<div class="tiny" style="margin:18px 0 6px">'+esc(i18('Эксклюзивные рамки'))+'</div>'+
+    (own?'<div class="tiny hint">'+esc(i18('Владельцу всё открыто автоматически.'))+'</div>':d.exclusive.map(it=>'<div class="srow"><span>'+esc(i18((FRAMES.find(f=>f[0]===it)||[0,it])[1]))+'</span><button type="button" class="sw" role="switch" aria-checked="'+d.grants.includes(it)+'" data-ow="grant" data-id="'+esc(u.id)+'" data-item="'+esc(it)+'"><i></i></button></div>').join(''))+
+    '<div class="row" style="margin-top:18px"><button class="btn ghost" type="button" onclick="closeModal()">'+esc(i18('Закрыть'))+'</button></div>';
+  showModal();
+}
+async function ownerAct(el){
+  const a=el.dataset.ow,id=el.dataset.id;
+  try{
+    if(a==='open')return openOwnerUser(id);
+    if(a==='role'){await rpc('admin_set_role',{p_form_id:id,p_role:el.dataset.v});toast(i18('Роль изменена'))}
+    else if(a==='rmtag'){await rpc('admin_remove_tag',{p_tag_id:+el.dataset.tid});toast(i18('Тег снят'))}
+    else if(a==='addtag'){
+      const label=($('owLabel')||{}).value||'';
+      if(!label.trim())return toast(i18(ERR.tag_invalid));
+      await rpc('admin_add_tag',{p_form_id:id,p_label:label,p_style:$('owStyle').value,p_color:$('owColor').value||null});toast(i18('Тег выдан'));
+    }
+    else if(a==='grant'){const on=el.getAttribute('aria-checked')!=='true';await rpc('admin_grant',{p_form_id:id,p_item:el.dataset.item,p_on:on});toast(i18(on?'Предмет выдан':'Предмет снят'))}
+    await openOwnerUser(O.cur&&O.cur.id||id);
+    if(cur()==='owner'&&O.tab==='users')loadOwnerUsers();
+  }catch(e){if(await ownerGuard(e))return;toast(human(e))}
+}
+
 /* ---------- события ---------- */
 function onClick(e){
   const t=e.target;
@@ -626,6 +727,10 @@ function onClick(e){
     if(a.dataset.act==='back'){goBack();return}
     act(a.dataset.act,a.dataset.id);return;
   }
+  const ow=t.closest('[data-ow]');
+  if(ow&&!ow.disabled){ownerAct(ow);return}
+  const owt=t.closest('[data-owtab]');
+  if(owt){O.tab=owt.dataset.owtab;renderOwner();return}
   const hs=t.closest('.sw[data-hide]');
   if(hs){
     const k=hs.dataset.hide,on=hs.getAttribute('aria-checked')!=='true';
@@ -673,6 +778,7 @@ function onChange(e){
   else if(t.id==='peBgFile'){pickImage('bg',t.files&&t.files[0]);t.value=''}
 }
 function onSubmit(e){
+  if(e.target.id==='owForm'){e.preventDefault();O.q=$('owQ').value;loadOwnerUsers();return}
   if(e.target.id==='findForm'){e.preventDefault();clearTimeout(findTm);const q=$('findQ').value;S.query=q;search(q)}
   else if(e.target.id==='blockForm'){
     e.preventDefault();
@@ -685,7 +791,7 @@ function onSubmit(e){
 function goBack(){
   if(cur()==='profedit'&&S.D&&S.D.dirty){confirmBox('Выйти без сохранения?','Несохранённые изменения профиля будут потеряны.','Выйти',()=>{S.D=null;back('profile')});return}
   if(cur()==='profedit')S.D=null;
-  back(cur()==='privacy'?'settings':cur()==='profedit'?'profile':cur()==='notifs'?'dashboard':'friends');
+  back(cur()==='privacy'||cur()==='owner'?'settings':cur()==='profedit'?'profile':cur()==='notifs'?'dashboard':'friends');
 }
 function renderAll(){
   if(cur()==='friends')renderFriends();
@@ -695,7 +801,10 @@ function renderAll(){
 }
 function onScreen(id){
   if(!SUB.has(id))NAV.length=0;
+  // Owner Panel: прямой переход без прав никуда не ведёт (а сервер всё равно отклонит любой запрос)
+  if(id==='owner'&&!isOwner()){showScreen('dashboard');toast(i18('Нет доступа'));return}
   if(!started)return;
+  if(id==='owner'){O.tab='users';O.q='';renderOwner();return}
   if(id==='friends'){renderFriends();refreshFriends().then(()=>{if(cur()==='friends')renderFriends()})}
   else if(id==='notifs'){loadNotifs(false);refreshFriends().then(()=>{if(cur()==='notifs')drawNotifs()})}
   else if(id==='privacy'){renderPrivacy();loadBlocked().then(()=>{if(cur()==='privacy')renderPrivacy()})}
@@ -757,5 +866,5 @@ document.addEventListener('change',onChange);
 document.addEventListener('submit',onSubmit);
 
 window.FormSocial={start,touch,onScreen,go,back:goBack,openUser,openEditor,openPreview,
-  open:id=>go(id),get me(){return S.me}};
+  open:id=>go(id),get me(){return S.me},get role(){return S.me?S.me.role:'user'}};
 })();
