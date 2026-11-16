@@ -7,7 +7,7 @@ const $=id=>document.getElementById(id);
 const RM=()=>!!(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches);
 const SITE=location.origin+location.pathname.replace(/index\.html$/,'');
 const DEF_NAME='ПОЛЬЗОВАТЕЛЬ';
-const SUB=new Set(['userprofile','profedit','privacy','notifs','owner']);
+const SUB=new Set(['userprofile','privacy','notifs','owner']);
 const NAV=[];
 let sb=null,uid=null,started=false;
 const O={tab:'users',q:'',cur:null};
@@ -56,8 +56,8 @@ async function rpc(fn,args){
 
 /* ---------- мелкие помощники ---------- */
 const clean=s=>String(s==null?'':s);
-const IMG_RE=/^data:image\/(webp|jpeg|png);base64,[A-Za-z0-9+\/=]+$/;
-const safeImg=u=>(typeof u==='string'&&u.length<300000&&IMG_RE.test(u))?u:'';
+const IMG_RE=/^data:image\/(webp|jpeg|png|gif);base64,[A-Za-z0-9+\/=]+$/;
+const safeImg=u=>(typeof u==='string'&&u.length<1000000&&IMG_RE.test(u))?u:'';
 const safeUrl=u=>(typeof u==='string'&&/^https?:\/\/[^\s<>"']+$/i.test(u)&&u.length<=200)?u:'';
 const hex=c=>/^#[0-9a-f]{6}$/i.test(c||'')?c:'#2f5bea';
 const pad2=n=>String(n).padStart(2,'0');
@@ -155,7 +155,7 @@ const roleChip=r=>r&&r!=='user'?'<span class="rolechip r-'+esc(r)+'">'+esc(i18(R
 const letter=n=>(String(n||'?').trim().charAt(0)||'?').toUpperCase();
 function avHTML(u,size,o){
   o=o||{};
-  const img=safeImg(o.big?(u.avatar||u.avatar_thumb):(u.avatar_thumb||u.avatar));
+  const img=safeImg(o.big?(u.avatar_anim||u.avatar||u.avatar_thumb):(u.avatar_thumb||u.avatar));
   const fr=FRAMES.some(f=>f[0]===u.frame)?u.frame:'none',name=dispName(u);
   const dot=o.noDot||u.online==null?'':'<i class="odot'+(u.online?' on':'')+'" aria-hidden="true"></i>';
   return '<span class="pav f-'+fr+'" style="--s:'+size+'px;--pc:'+hex(u.color)+'"><span class="av" style="--s:'+size+'px">'+
@@ -170,13 +170,14 @@ function loadCache(){
 }
 function saveCache(){
   if(!S.me)return;
-  try{const c={...S.me};delete c.banner_image;delete c.bg_image;delete c.avatar;localStorage.setItem(CK(),JSON.stringify(c))}catch(_){}
+  try{const c={...S.me};delete c.banner_image;delete c.bg_image;delete c.avatar;delete c.avatar_anim;localStorage.setItem(CK(),JSON.stringify(c))}catch(_){}
 }
 const avSig=()=>state.avatar?state.avatar.length+':'+state.avatar.slice(-24):'';
 let pushTm=null,pushBusy=false,lastSig='';
 function sigNow(){return [state.callsign,state.xp,state.completed.length,state.unlocked.length,avSig()].join('|')}
 function touch(){
   if(!started||!S.me)return;
+  if(cur()==='profile'&&S.D)clearTimeout(prevTm),prevTm=setTimeout(drawPrev,80);
   const s=sigNow();if(s===lastSig)return;
   clearTimeout(pushTm);pushTm=setTimeout(()=>pushMine(false),2500);
 }
@@ -194,10 +195,10 @@ async function pushMine(first){
     if(dn!==(S.me.display_name||''))p.display_name=dn;
     let avKey='';try{avKey=localStorage.getItem('formSocialAv:'+uid)||''}catch(_){}
     const asig=avSig();
-    if(asig!==avKey||(first&&!!state.avatar!==!!S.me.avatar)){
+    if(asig!==avKey||(first&&!!state.avatar!==!!S.me.avatar&&!S.me.avatar_anim)){
       if(state.avatar){
         try{p.avatar=await squareOf(state.avatar,192,.8);p.avatar_thumb=await squareOf(state.avatar,64,.75)}catch(_){}
-      }else{p.avatar=null;p.avatar_thumb=null}
+      }else if(!S.me.avatar_anim){p.avatar=null;p.avatar_thumb=null}
     }
     const r=await rpc('update_profile',{p});
     S.me=r;saveCache();lastSig=sig;
@@ -233,12 +234,12 @@ function badgeHTML(name,on){
 /* v — профиль в формате сервера; o.actions — HTML кнопок */
 function cardHTML(v,o){
   o=o||{};
-  const th=v.theme||{},col=hex(th.color),deco=th.deco||'none';
+  const th=v.theme||{},col=hex(th.color),deco=th.deco||'none',c2=/^#[0-9a-f]{6}$/i.test(th.color2||'')?th.color2:'';
   if(v.limited){
     return '<div class="pcard" style="--pc:'+col+'"><div class="pc-banner" data-deco="none"></div><div class="pc-main"><div class="pc-avrow">'+avHTML({...v,color:col,frame:th.frame,online:null},88,{big:true})+'<div class="pc-act">'+(o.actions||'')+'</div></div><div class="pc-nm" style="margin-top:12px"><h2 class="pc-name" data-nt>'+esc(dispName(v))+'</h2>'+tagsHTML(v.tags)+'</div><div class="pc-ids">'+idChip(v.id)+'<span class="tiny" data-nt>@'+esc(v.username)+'</span></div><p class="sub pc-lim">'+esc(i18('Этот пользователь ограничил просмотр профиля.'))+'</p></div></div>';
   }
   const pinned=(v.badges&&v.badges.pinned)||[],medals=(v.badges&&v.badges.medals)||[];
-  let h='<div class="pcard" data-bg="'+esc(th.bg||'none')+'" style="--pc:'+col+'"><div class="pc-banner" data-deco="'+esc(deco)+'" data-img="'+(th.banner==='image'&&safeImg(v.banner_image)?'1':'')+'"></div><div class="pc-main">';
+  let h='<div class="pcard" data-bg="'+esc(th.bg||'none')+'" style="--pc:'+col+(c2?';--pc2:'+c2:'')+'"'+(c2?' data-grad="1"':'')+'><div class="pc-banner" data-deco="'+esc(deco)+'" data-img="'+(th.banner==='image'&&safeImg(v.banner_image)?'1':'')+'"></div><div class="pc-main">';
   h+='<div class="pc-avrow">'+avHTML({...v,color:col,frame:th.frame},88,{big:true})+'<div class="pc-act">'+(o.actions||'')+'</div></div>';
   h+='<div class="pc-title"><div class="pc-nm"><h2 class="pc-name" data-nt>'+esc(dispName(v))+'</h2>'+tagsHTML(v.tags)+'</div>'+(v.badges?'<span class="pc-rank" title="'+esc(i18(rankNames[v.badges.rank]||''))+'">'+crest(Math.max(0,Math.min(MAX_RANK,v.badges.rank|0)))+'</span>':'')+'</div>';
   h+='<div class="pc-ids">'+idChip(v.id)+'<span class="tiny" data-nt>@'+esc(v.username)+'</span></div>';
@@ -505,11 +506,13 @@ const PRIV=[
 const HIDE=[['bio','О себе'],['status','Статус'],['links','Ссылки'],['badges','Значки и достижения'],['stats','Статистика'],['registered','Дата регистрации'],['banner','Баннер и фон']];
 function swHTML(k,on){return '<button type="button" class="sw" role="switch" aria-checked="'+(!!on)+'" data-hide="'+k+'"><i></i></button>'}
 function renderPrivacy(){
-  const box=$('privBody');if(!box)return;
+  const inl=cur()==='profile',box=$(inl?'pePriv':'privBody'),other=$(inl?'privBody':'pePriv');
+  if(other)other.innerHTML=''; // одна копия на странице: без дублей id
+  if(!box)return;
   if(!S.me){box.innerHTML='<div class="empty">'+esc(S.loadErr?human(S.loadErr):i18('Загружаю профиль…'))+'</div>';return}
   const pv=S.me.privacy||{},hide=pv.hide||[];
   let h='<div class="acc">'+PRIV.map(p=>'<div class="prow"><div><b>'+esc(i18(p[1]))+'</b><div class="tiny">'+esc(i18(p[2]))+'</div></div><div class="seg full" role="radiogroup" data-pk="'+p[0]+'" style="grid-template-columns:repeat('+p[3].length+',1fr)">'+p[3].map(o=>'<button type="button" role="radio" data-v="'+o[0]+'" class="'+(pv[p[0]]===o[0]?'on':'')+'" aria-checked="'+(pv[p[0]]===o[0])+'">'+esc(i18(o[1]))+'</button>').join('')+'</div></div>').join('')+'</div>';
-  h+='<div class="sectiontitle"><span>'+esc(i18('Скрыть из профиля'))+'</span></div><p class="sub">'+esc(i18('Скрытые элементы не видит никто, кроме вас. Это те же переключатели, что и в редакторе профиля.'))+'</p><div class="acc">'+HIDE.map(x=>'<div class="srow"><span>'+esc(i18(x[1]))+'</span>'+swHTML(x[0],hide.includes(x[0]))+'</div>').join('')+'</div>';
+  if(!inl)h+='<div class="sectiontitle"><span>'+esc(i18('Скрыть из профиля'))+'</span></div><p class="sub">'+esc(i18('Скрытые элементы не видит никто, кроме вас. Это те же переключатели, что и в редакторе профиля.'))+'</p><div class="acc">'+HIDE.map(x=>'<div class="srow"><span>'+esc(i18(x[1]))+'</span>'+swHTML(x[0],hide.includes(x[0]))+'</div>').join('')+'</div>';
   h+='<div class="sectiontitle"><span>'+esc(i18('Заблокированные'))+'</span><span>'+S.blocked.length+'</span></div><p class="sub">'+esc(i18('Заблокированные пользователи не могут отправлять вам заявки и взаимодействовать с вами, а ваш профиль для них недоступен.'))+'</p>';
   h+='<form id="blockForm" class="findform" autocomplete="off"><div class="row" style="gap:8px"><input class="field" id="blockQ" maxlength="20" placeholder="FORM#123456" autocapitalize="off" spellcheck="false" aria-label="FORM ID"><button class="btn secondary" type="submit">'+esc(i18('Заблокировать'))+'</button></div></form>';
   h+=S.blocked.length?S.blocked.map(u=>'<div class="frow"><button type="button" class="frmain" data-act="open" data-id="'+esc(u.id)+'">'+avHTML(u,40,{noDot:true})+'<span class="frtxt"><span class="frname"><b data-nt>'+esc(dispName(u))+'</b>'+tagsHTML(u.tags)+'</span><span class="tiny" data-nt>'+esc(u.id)+'</span></span></button><span class="fract"><button type="button" class="btn small ghost" data-act="unblock" data-id="'+esc(u.id)+'">'+esc(i18('Разблокировать'))+'</button></span></div>').join(''):'<div class="empty">'+esc(i18('Список пуст.'))+'</div>';
@@ -523,24 +526,25 @@ async function setPriv(patch){
   renderPrivacy();
 }
 
-/* ---------- редактор профиля ---------- */
-const COLORS=['#2f5bea','#6b5be2','#c2399a','#e05a3a','#c77b00','#1f9d63','#0b8fa6','#111111','#6b6b73','#8a5a3c','#d1478a','#3d8f2f'];
-const DECOS=[['none','Нет'],['dots','Точки'],['grid','Сетка'],['lines','Линии'],['orbit','Орбита']];
+/* ---------- редактор профиля: вкладка «Профиль», все настройки в одном месте ---------- */
+const COLORS=['#111111','#3a3a42','#6b6b73','#a3a3ab','#ffffff','#2f5bea','#4f7bff','#0b8fa6','#00a3a3','#00677f','#1f9d63','#3d8f2f','#7fb800','#c2b500','#c77b00','#ffa94d','#e05a3a','#d93b3b','#8a3a1f','#c2399a','#d1478a','#ff6b9d','#8e44ad','#6b5be2','#5b2a86','#2a2a8a','#4dabf7','#69db7c','#b197fc','#006d4a'];
+const DECOS=[['none','Нет'],['dots','Точки'],['grid','Сетка'],['lines','Линии'],['orbit','Орбита'],['ascii','ASCII'],['binary','Код']];
 const BGS=[['none','Обычный'],['tint','Оттенок цвета'],['image','Моё изображение']];
+const GIF_MAX={avatar:450000,banner:650000,bg:650000}; // байты файла: в базу GIF кладётся как есть (с анимацией)
 let prevTm=null;
 function draftFrom(m){
   const th=m.theme||{};
   return {display:myName(),username:m.username,bio:m.bio||'',status:m.status||'',links:(m.links||[]).map(l=>({label:l.label||'',url:l.url||''})),
-    color:th.color||'#2f5bea',banner:th.banner||'color',deco:th.deco||'dots',bg:th.bg||'none',frame:th.frame||'none',
-    banner_image:m.banner_image||null,bg_image:m.bg_image||null,pinned:(m.pinned||[]).slice(),hide:((m.privacy||{}).hide||[]).slice(),
-    bannerCh:false,bgCh:false,dirty:false};
+    color:th.color||'#2f5bea',color2:th.color2||'',banner:th.banner||'color',deco:th.deco||'dots',bg:th.bg||'none',frame:th.frame||'none',
+    banner_image:m.banner_image||null,bg_image:m.bg_image||null,avatar_anim:m.avatar_anim||null,pinned:(m.pinned||[]).slice(),hide:((m.privacy||{}).hide||[]).slice(),
+    bannerCh:false,bgCh:false,avCh:false,avFirst:null,dirty:false};
 }
 function viewFromDraft(){
-  const D=S.D,m=S.me,hide=D.hide,th={color:D.color,banner:D.banner,deco:D.deco,bg:D.bg,frame:D.frame};
+  const D=S.D,m=S.me,hide=D.hide,th={color:D.color,color2:D.color2||null,banner:D.banner,deco:D.deco,bg:D.bg,frame:D.frame};
   if(hide.includes('banner')){th.banner='color';th.deco='none';th.bg='none'}
   const st=statsNow(),have=st.medals;
   const v={id:m.id,tags:m.tags||[],username:D.username||m.username,display_name:D.display||D.username||m.username,
-    avatar:state.avatar||null,avatar_thumb:state.avatar||null,theme:th,online:true,
+    avatar:state.avatar||(D.avFirst&&D.avFirst.avatar)||null,avatar_thumb:state.avatar||null,avatar_anim:D.avatar_anim,theme:th,online:true,
     banner_image:D.banner_image,bg_image:D.bg_image};
   if(!hide.includes('status'))v.status=D.status;
   if(!hide.includes('bio'))v.bio=D.bio;
@@ -551,15 +555,24 @@ function viewFromDraft(){
   return v;
 }
 function drawPrev(){
-  const box=$('pePrev');if(!box||!S.D)return;
+  const box=$('pePrev');if(!box||!S.me)return;
+  if(!S.D)S.D=draftFrom(S.me);
   showCard(box,viewFromDraft(),{});
   box.querySelectorAll('[data-act]').forEach(b=>{b.removeAttribute('data-act');b.tabIndex=-1});
 }
-function drawSwatches(){
-  const D=S.D,box=$('peColors');if(!box)return;
-  box.innerHTML=COLORS.map(c=>'<button type="button" class="swatch'+(D.color.toLowerCase()===c?' on':'')+'" data-c="'+c+'" style="--c:'+c+'" aria-label="'+c+'"></button>').join('')+'<label class="swatch custom'+(COLORS.includes(D.color.toLowerCase())?'':' on')+'" aria-label="'+esc(i18('Свой цвет'))+'"><input type="color" id="peColor" value="'+hex(D.color)+'"></label>';
+function updateBar(){const b=$('peBar');if(b)b.hidden=!(S.D&&S.D.dirty)}
+function swatchRow(sel,key,none){
+  return (none?'<button type="button" class="swatch none'+(!sel?' on':'')+'" data-c2="" aria-label="'+esc(i18('Без второго цвета'))+'">×</button>':'')+
+    COLORS.map(c=>'<button type="button" class="swatch'+((sel||'').toLowerCase()===c?' on':'')+'" '+key+'="'+c+'" style="--c:'+c+'" aria-label="'+c+'"></button>').join('')+
+    '<label class="swatch custom'+(sel&&!COLORS.includes(sel.toLowerCase())?' on':'')+'" aria-label="'+esc(i18('Свой цвет'))+'"><input type="color" id="'+(none?'peColor2':'peColor')+'" value="'+hex(sel||'#2f5bea')+'"></label>';
 }
-function segHTML(key,opts,val){return '<div class="seg full wrap" role="radiogroup" data-ek="'+key+'" style="grid-template-columns:repeat('+opts.length+',1fr)">'+opts.map(o=>'<button type="button" role="radio" data-v="'+o[0]+'" class="'+(val===o[0]?'on':'')+'" aria-checked="'+(val===o[0])+'">'+esc(i18(o[1]))+'</button>').join('')+'</div>'}
+function drawSwatches(){
+  const D=S.D,a=$('peColors'),b=$('peColors2');
+  if(a)a.innerHTML=swatchRow(D.color,'data-c',false);
+  if(b)b.innerHTML=swatchRow(D.color2,'data-c2',true);
+}
+function segHTML(key,opts,val){return '<div class="seg full wrap" role="radiogroup" data-ek="'+key+'" style="grid-template-columns:repeat('+Math.min(opts.length,4)+',1fr)">'+opts.map(o=>'<button type="button" role="radio" data-v="'+o[0]+'" class="'+(val===o[0]?'on':'')+'" aria-checked="'+(val===o[0])+'">'+esc(i18(o[1]))+'</button>').join('')+'</div>'}
+const fileBtn=(id,label,accept)=>'<label class="btn secondary small" style="margin:0;cursor:pointer">'+esc(i18(label))+'<input type="file" id="'+id+'" accept="'+accept+'" hidden></label>';
 function drawEditorParts(){
   const D=S.D;
   const fr=$('peFrames');
@@ -568,11 +581,13 @@ function drawEditorParts(){
     return '<button type="button" class="frameopt'+(D.frame===f[0]?' on':'')+(ok?'':' lk')+'" data-f="'+f[0]+'"'+(ok?'':' disabled')+' aria-label="'+esc(i18(f[1]))+'">'+avHTML({display_name:D.display||D.username,avatar_thumb:state.avatar||null,color:D.color,frame:f[0]},46,{noDot:true})+'<span class="tiny">'+esc(ok?i18(f[1]):(f[2]==='x'?i18('Эксклюзив'):i18('ранг {n}',{n:pad2(f[2]+1)})))+'</span></button>';
   }).join('');
   drawSwatches();
+  const ag=$('peAvBtns');
+  if(ag)ag.innerHTML='<button type="button" class="btn secondary small" onclick="openAvatar()">'+esc(i18('Изменить фото'))+'</button>'+fileBtn('peAvGif','GIF-аватар','image/gif')+(D.avatar_anim?'<button type="button" class="btn ghost small" data-del="avgif">'+esc(i18('Убрать GIF'))+'</button>':'');
   const bi=$('peBanner');
-  if(bi)bi.innerHTML=segHTML('banner',[['color','Цвет'],['image','Изображение']],D.banner)+(D.banner==='image'?'<div class="row" style="gap:8px;margin-top:8px"><label class="btn secondary small" style="margin:0;cursor:pointer">'+esc(i18(D.banner_image?'Заменить':'Загрузить'))+'<input type="file" id="peBannerFile" accept="image/*" hidden></label>'+(D.banner_image?'<button type="button" class="btn ghost small" data-del="banner">'+esc(i18('Убрать'))+'</button>':'')+'</div>':'');
+  if(bi)bi.innerHTML=segHTML('banner',[['color','Цвет'],['image','Изображение или GIF']],D.banner)+(D.banner==='image'?'<div class="row" style="gap:8px;margin-top:8px;justify-content:flex-start">'+fileBtn('peBannerFile',D.banner_image?'Заменить':'Загрузить','image/*')+(D.banner_image?'<button type="button" class="btn ghost small" data-del="banner">'+esc(i18('Убрать'))+'</button>':'')+'</div>':'');
   const dc=$('peDeco');if(dc)dc.innerHTML=segHTML('deco',DECOS,D.deco);
   const bg=$('peBg');
-  if(bg)bg.innerHTML=segHTML('bg',BGS,D.bg)+(D.bg==='image'?'<div class="row" style="gap:8px;margin-top:8px"><label class="btn secondary small" style="margin:0;cursor:pointer">'+esc(i18(D.bg_image?'Заменить':'Загрузить'))+'<input type="file" id="peBgFile" accept="image/*" hidden></label>'+(D.bg_image?'<button type="button" class="btn ghost small" data-del="bg">'+esc(i18('Убрать'))+'</button>':'')+'</div>':'');
+  if(bg)bg.innerHTML=segHTML('bg',BGS,D.bg)+(D.bg==='image'?'<div class="row" style="gap:8px;margin-top:8px;justify-content:flex-start">'+fileBtn('peBgFile',D.bg_image?'Заменить':'Загрузить','image/*')+(D.bg_image?'<button type="button" class="btn ghost small" data-del="bg">'+esc(i18('Убрать'))+'</button>':'')+'</div>':'');
   const pn=$('pePins');
   if(pn){
     const have=statsNow().medals;
@@ -583,45 +598,47 @@ function drawEditorParts(){
   const ln=$('peLinks');
   if(ln)ln.innerHTML=D.links.map((l,i)=>'<div class="lrow"><input class="field" data-li="'+i+'" data-lf="label" maxlength="24" placeholder="'+esc(i18('Название'))+'" value="'+esc(l.label)+'" aria-label="'+esc(i18('Название ссылки'))+'"><input class="field" data-li="'+i+'" data-lf="url" maxlength="200" inputmode="url" autocapitalize="off" spellcheck="false" placeholder="https://" value="'+esc(l.url)+'" aria-label="URL"><button type="button" class="iconbtn" data-ldel="'+i+'" aria-label="'+esc(i18('Удалить ссылку'))+'">×</button></div>').join('')+(D.links.length<4?'<button type="button" class="btn secondary small" id="peAddLink">+ '+esc(i18('Добавить ссылку'))+'</button>':'');
 }
+const asc=t=>'<div class="asc-title"><span>'+esc(i18(t))+'</span></div>';
 function renderEditor(){
   const box=$('peBody');if(!box)return;
   if(!S.me){box.innerHTML='<div class="empty">'+esc(S.loadErr?human(S.loadErr):i18('Загружаю профиль…'))+'</div>';return}
+  if(!S.D)S.D=draftFrom(S.me);
   const D=S.D,m=S.me;
   const left=m.username_changed_at?Math.ceil((new Date(m.username_changed_at).getTime()+7*864e5-Date.now())/864e5):0;
-  box.innerHTML='<div id="pePrev"></div>'+
-   '<div class="sectiontitle"><span>'+esc(i18('Основное'))+'</span></div>'+
-   '<label for="peName">'+esc(i18('Отображаемое имя'))+'</label><input class="field" id="peName" maxlength="18" autocomplete="off" spellcheck="false" value="'+esc(D.display)+'" placeholder="'+esc(i18('ПОЛЬЗОВАТЕЛЬ'))+'">'+
+  box.innerHTML=
+   asc('01 · Аватар и баннер')+
+   '<div class="row" id="peAvBtns" style="justify-content:flex-start;gap:8px;flex-wrap:wrap"></div><div class="tiny hint">'+esc(i18('GIF: до 450 КБ для аватара, до 650 КБ для баннера и фона.'))+'</div>'+
+   '<div class="tiny" style="margin:16px 0 8px">'+esc(i18('Рамка аватара'))+'</div><div class="frames" id="peFrames"></div>'+
+   '<div class="tiny" style="margin:16px 0 8px">'+esc(i18('Баннер'))+'</div><div id="peBanner"></div>'+
+   '<div class="tiny" style="margin:16px 0 8px">'+esc(i18('Декор баннера'))+'</div><div id="peDeco"></div>'+
+   asc('02 · Информация')+
+   '<label for="peName" style="margin-top:0">'+esc(i18('Отображаемое имя'))+'</label><input class="field" id="peName" maxlength="18" autocomplete="off" spellcheck="false" value="'+esc(D.display)+'" placeholder="'+esc(i18('ПОЛЬЗОВАТЕЛЬ'))+'">'+
    '<label for="peUser">'+esc(i18('Имя пользователя'))+'</label><div class="atfield"><span>@</span><input class="field" id="peUser" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false" value="'+esc(D.username)+'"'+(left>0?' disabled':'')+'></div><div class="tiny hint">'+esc(left>0?i18('Следующая смена имени пользователя через {n} дн.',{n:left}):i18('3–20 символов: латиница, цифры, _ и точка. Менять можно раз в 7 дней.'))+'</div>'+
    '<label for="peStatus">'+esc(i18('Статус'))+'</label><input class="field" id="peStatus" maxlength="60" autocomplete="off" value="'+esc(D.status)+'" placeholder="'+esc(i18('Чем занят сейчас'))+'">'+
    '<label for="peBio">'+esc(i18('О себе'))+'</label><textarea class="field" id="peBio" maxlength="200" rows="3" placeholder="'+esc(i18('Пара слов о вас'))+'">'+esc(D.bio)+'</textarea><div class="tiny hint" id="peBioN"></div>'+
-   '<div class="sectiontitle"><span>'+esc(i18('Ссылки'))+'</span></div><div id="peLinks"></div>'+
-   '<div class="sectiontitle"><span>'+esc(i18('Аватар'))+'</span></div><div class="row" style="justify-content:flex-start;gap:10px;margin-bottom:12px"><button type="button" class="btn secondary small" onclick="openAvatar()">'+esc(i18('Изменить фото'))+'</button></div><div class="tiny" style="margin-bottom:8px">'+esc(i18('Рамка аватара'))+'</div><div class="frames" id="peFrames"></div>'+
-   '<div class="sectiontitle"><span>'+esc(i18('Оформление'))+'</span></div>'+
+   '<div class="tiny" style="margin:18px 0 8px">'+esc(i18('Ссылки'))+'</div><div id="peLinks"></div>'+
+   asc('03 · Персонализация')+
    '<div class="tiny" style="margin-bottom:8px">'+esc(i18('Цвет профиля'))+'</div><div class="swatches" id="peColors"></div>'+
-   '<div class="tiny" style="margin:16px 0 8px">'+esc(i18('Баннер'))+'</div><div id="peBanner"></div>'+
-   '<div class="tiny" style="margin:16px 0 8px">'+esc(i18('Декор баннера'))+'</div><div id="peDeco"></div>'+
+   '<div class="tiny" style="margin:16px 0 8px">'+esc(i18('Второй цвет (градиент баннера)'))+'</div><div class="swatches" id="peColors2"></div>'+
    '<div class="tiny" style="margin:16px 0 8px">'+esc(i18('Фон профиля'))+'</div><div id="peBg"></div>'+
-   '<div class="sectiontitle"><span>'+esc(i18('Закреплённые достижения'))+'</span><span id="pePinN"></span></div><p class="sub">'+esc(i18('Выберите до трёх любимых наград: они будут показаны первыми.'))+'</p><div class="pickgrid" id="pePins"></div>'+
-   '<div class="sectiontitle"><span>'+esc(i18('Скрыть из профиля'))+'</span></div><p class="sub">'+esc(i18('Скрытые элементы не видит никто, кроме вас. Это те же переключатели, что и в редакторе профиля.'))+'</p><div class="acc" id="peHide"></div>'+
-   '<div class="row" style="margin-top:22px;gap:10px"><button type="button" class="btn ghost" data-act="peview">'+esc(i18('Как видят другие'))+'</button><button type="button" class="btn" id="peSave2">'+esc(i18('Сохранить'))+'</button></div>';
-  drawEditorParts();drawPrev();bioCount();pinCount();
+   '<div class="tiny" style="margin:18px 0 6px">'+esc(i18('Закреплённые достижения'))+' <span id="pePinN"></span></div><div class="pickgrid" id="pePins"></div>'+
+   asc('04 · Отображение')+'<p class="sub" style="margin-top:0">'+esc(i18('Скрытые элементы не видит никто, кроме вас. Это те же переключатели, что и в редакторе профиля.'))+'</p><div class="acc" id="peHide"></div>';
+  drawEditorParts();drawPrev();bioCount();pinCount();updateBar();
 }
 const bioCount=()=>{const n=$('peBioN');if(n&&S.D)n.textContent=S.D.bio.length+' / 200'};
-const pinCount=()=>{const n=$('pePinN');if(n&&S.D)n.textContent=S.D.pinned.length+' / 3'};
-function dirty(){if(S.D)S.D.dirty=true;clearTimeout(prevTm);prevTm=setTimeout(drawPrev,60)}
-function openEditor(){
-  if(!S.me){toast(S.loadErr?human(S.loadErr):i18('Профиль ещё загружается'));return}
-  S.D=draftFrom(S.me);go('profedit');renderEditor();
-}
+const pinCount=()=>{const n=$('pePinN');if(n&&S.D)n.textContent='('+S.D.pinned.length+' / 3)'};
+function dirty(){if(S.D)S.D.dirty=true;updateBar();clearTimeout(prevTm);prevTm=setTimeout(drawPrev,60)}
+function openEditor(){showScreen('profile')}
 async function saveEditor(){
   const D=S.D;if(!D)return;
   if(D.username!==S.me.username&&!/^[A-Za-z0-9_.]{3,20}$/.test(D.username))return toast(i18(ERR.username_invalid));
   for(const l of D.links)if((l.url||l.label)&&!safeUrl(l.url))return toast(i18('Ссылка должна начинаться с http:// или https://'));
   const p={display_name:D.display,bio:D.bio,status:D.status,links:D.links.filter(l=>safeUrl(l.url)),
-    theme:{color:D.color,banner:D.banner,deco:D.deco,bg:D.bg,frame:frameOk(D.frame)?D.frame:'none'},pinned:D.pinned,privacy:{hide:D.hide}};
+    theme:{color:D.color,color2:D.color2||null,banner:D.banner,deco:D.deco,bg:D.bg,frame:frameOk(D.frame)?D.frame:'none'},pinned:D.pinned,privacy:{hide:D.hide}};
   if(D.username!==S.me.username)p.username=D.username;
   if(D.bannerCh)p.banner_image=D.banner_image;
   if(D.bgCh)p.bg_image=D.bg_image;
+  if(D.avCh){p.avatar_anim=D.avatar_anim;if(D.avFirst&&!state.avatar){p.avatar=D.avFirst.avatar;p.avatar_thumb=D.avFirst.thumb}}
   const btns=[$('peSave'),$('peSave2')].filter(Boolean);btns.forEach(b=>b.disabled=true);
   try{
     S.me=await rpc('update_profile',{p});saveCache();
@@ -633,8 +650,21 @@ async function saveEditor(){
   }catch(e){toast(human(e))}
   btns.forEach(b=>b.disabled=false);
 }
+const readFile=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f)});
+async function pickGif(kind,file){
+  if(file.size>GIF_MAX[kind])return toast(i18('GIF слишком большой: не больше {n} КБ',{n:Math.round(GIF_MAX[kind]/1000)}));
+  let u;try{u=await readFile(file)}catch(_){return toast(i18('Не удалось обработать изображение'))}
+  if(!/^data:image\/gif;base64,R0lGOD/.test(u))return toast(i18('Это не GIF'));
+  if(kind==='avatar'){
+    S.D.avatar_anim=u;S.D.avCh=true;S.D.avFirst=null;
+    if(!state.avatar){try{S.D.avFirst={avatar:await squareOf(u,192,.8),thumb:await squareOf(u,64,.75)}}catch(_){}}
+  }else if(kind==='banner'){S.D.banner_image=u;S.D.bannerCh=true;S.D.banner='image'}
+  else{S.D.bg_image=u;S.D.bgCh=true;S.D.bg='image'}
+  dirty();drawEditorParts();drawPrev();
+}
 async function pickImage(kind,file){
   if(!file)return;
+  if(file.type==='image/gif')return pickGif(kind,file);
   if(!/^image\//.test(file.type)&&!/\.(heic|heif|avif|webp|png|jpe?g)$/i.test(file.name||''))return toast(i18('Это не изображение'));
   try{
     const u=kind==='banner'?await fileToCover(file,960,320):await fileToCover(file,720,960);
@@ -642,7 +672,6 @@ async function pickImage(kind,file){
     dirty();drawEditorParts();drawPrev();
   }catch(_){toast(i18('Не удалось обработать изображение'))}
 }
-
 
 /* ---------- Owner Panel: все действия проверяются сервером (функции admin_*) ---------- */
 async function ownerGuard(e){
@@ -744,6 +773,9 @@ function onClick(e){
   if(ek&&S.D){S.D[ek.parentNode.dataset.ek]=ek.dataset.v;dirty();drawEditorParts();return}
   const sw=t.closest('.swatch[data-c]');
   if(sw&&S.D){S.D.color=sw.dataset.c;dirty();drawEditorParts();return}
+  const sw2=t.closest('.swatch[data-c2]');
+  if(sw2&&S.D){S.D.color2=sw2.dataset.c2;dirty();drawEditorParts();return}
+  if(t.closest('#peReset')&&S.me){S.D=draftFrom(S.me);renderEditor();return}
   const fo=t.closest('.frameopt[data-f]');
   if(fo&&S.D&&!fo.disabled){S.D.frame=fo.dataset.f;dirty();drawEditorParts();return}
   const pin=t.closest('[data-pin]');
@@ -753,7 +785,7 @@ function onClick(e){
     dirty();drawEditorParts();pinCount();return;
   }
   const del=t.closest('[data-del]');
-  if(del&&S.D){if(del.dataset.del==='banner'){S.D.banner_image=null;S.D.bannerCh=true}else{S.D.bg_image=null;S.D.bgCh=true}dirty();drawEditorParts();return}
+  if(del&&S.D){const k=del.dataset.del;if(k==='banner'){S.D.banner_image=null;S.D.bannerCh=true}else if(k==='avgif'){S.D.avatar_anim=null;S.D.avCh=true;S.D.avFirst=null}else{S.D.bg_image=null;S.D.bgCh=true}dirty();drawEditorParts();drawPrev();return}
   const ld=t.closest('[data-ldel]');
   if(ld&&S.D){S.D.links.splice(+ld.dataset.ldel,1);dirty();drawEditorParts();return}
   if(t.closest('#peAddLink')&&S.D){S.D.links.push({label:'',url:''});dirty();drawEditorParts();return}
@@ -769,6 +801,7 @@ function onInput(e){
   else if(t.id==='peStatus'&&D){D.status=t.value;dirty()}
   else if(t.id==='peBio'&&D){D.bio=t.value;bioCount();dirty()}
   else if(t.id==='peColor'&&D){D.color=t.value;dirty();const o=document.querySelector('#peColors .swatch.on');if(o)o.classList.remove('on')}
+  else if(t.id==='peColor2'&&D){D.color2=t.value;dirty();const o=document.querySelector('#peColors2 .swatch.on');if(o)o.classList.remove('on')}
   else if(t.dataset&&t.dataset.li!=null&&D){const l=D.links[+t.dataset.li];if(l){l[t.dataset.lf]=t.value;dirty()}}
   else if(t.id==='findQ'){clearTimeout(findTm);const v=t.value;findTm=setTimeout(()=>search(v),380)}
 }
@@ -776,6 +809,7 @@ function onChange(e){
   const t=e.target;
   if(t.id==='peBannerFile'){pickImage('banner',t.files&&t.files[0]);t.value=''}
   else if(t.id==='peBgFile'){pickImage('bg',t.files&&t.files[0]);t.value=''}
+  else if(t.id==='peAvGif'){const f=t.files&&t.files[0];t.value='';if(f&&S.D){if(f.type!=='image/gif')toast(i18('Нужен файл GIF'));else pickGif('avatar',f)}}
 }
 function onSubmit(e){
   if(e.target.id==='owForm'){e.preventDefault();O.q=$('owQ').value;loadOwnerUsers();return}
@@ -789,9 +823,7 @@ function onSubmit(e){
   }
 }
 function goBack(){
-  if(cur()==='profedit'&&S.D&&S.D.dirty){confirmBox('Выйти без сохранения?','Несохранённые изменения профиля будут потеряны.','Выйти',()=>{S.D=null;back('profile')});return}
-  if(cur()==='profedit')S.D=null;
-  back(cur()==='privacy'||cur()==='owner'?'settings':cur()==='profedit'?'profile':cur()==='notifs'?'dashboard':'friends');
+  back(cur()==='privacy'||cur()==='owner'?'profile':cur()==='notifs'?'dashboard':'friends');
 }
 function renderAll(){
   if(cur()==='friends')renderFriends();
@@ -808,7 +840,11 @@ function onScreen(id){
   if(id==='friends'){renderFriends();refreshFriends().then(()=>{if(cur()==='friends')renderFriends()})}
   else if(id==='notifs'){loadNotifs(false);refreshFriends().then(()=>{if(cur()==='notifs')drawNotifs()})}
   else if(id==='privacy'){renderPrivacy();loadBlocked().then(()=>{if(cur()==='privacy')renderPrivacy()})}
-  else if(id==='profile')renderIdCard();
+  else if(id==='profile'){
+    if(S.me&&(!S.D||!S.D.dirty))S.D=draftFrom(S.me);
+    renderEditor();renderIdCard();renderPrivacy();
+    loadBlocked().then(()=>{if(cur()==='profile')renderPrivacy()});
+  }
 }
 
 /* ---------- присутствие, опрос, realtime ---------- */

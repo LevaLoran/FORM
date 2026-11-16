@@ -192,7 +192,7 @@ document.addEventListener('click',e=>{
   else if(t.dataset.jm){const [y,m]=t.dataset.jm.split('-').map(Number),tt=today(),ty=+tt.slice(0,4),tm=+tt.slice(5,7)-1;
    dir=(y*12+m)>(cur.y*12+cur.m)?1:-1;cur={y,m,auto:y===ty&&m===tm};if(sel&&sel.slice(0,7)!==y+'-'+P(m+1))sel=null;window.renderCalendar()}
  }
- const a=e.target.closest&&e.target.closest('.avslot[data-edit]');if(a)window.openAvatar();
+ const a=e.target.closest&&e.target.closest('.avslot[data-edit]');if(a)window.showScreen('profile');
 });
 })();
 

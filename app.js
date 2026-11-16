@@ -98,7 +98,7 @@ function normalize(raw){
  return s;
 }
 let state=load();
-const APP_VERSION='Бета 0.15',DB_NAME='lifeProtocolDB',DB_VER=1;
+const APP_VERSION='Бета 0.16',DB_NAME='lifeProtocolDB',DB_VER=1;
 let dbp=null,ready=false,idbOk=true;
 const getDb=()=>dbp||(dbp=new Promise((res,rej)=>{const r=indexedDB.open(DB_NAME,DB_VER);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('kv'))r.result.createObjectStore('kv')};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}));
 const idbGet=k=>getDb().then(db=>new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}));
@@ -219,6 +219,7 @@ function render(){
  $('rankDesc').textContent=r.i===MAX_RANK?'Максимальный ранг достигнут':i18('{n} XP до следующего ранга',{n:Math.max(0,r.end-state.xp)});
  renderMissions();renderGraphs();renderRanks();renderSkills();renderMedals();renderStats();renderProfile();renderHistory();renderReports();
  window.renderAvatars&&renderAvatars();
+ window.FormUI&&FormUI.sync(r);
 }
 function missionHTML(m){
  return `<div class="mission"><button class="check ${m.done?'done':''}" onclick="toggleMission('${m.id}')" aria-label="${m.done?'Отменить выполнение':'Отметить выполненной'}" title="${m.done?'Отменить выполнение':'Отметить выполненной'}">${m.done?'✓':''}</button><div style="min-width:0;flex:1"><div class="missiontitle" style="${m.done?'text-decoration:line-through;color:var(--dis)':''}">${esc(m.title)}</div><div class="missionmeta"><i class="cdot" style="background:${catColor(m.category)}"></i><span>${esc(categories[m.category]||m.category)}</span> · <span>${m.repeat==='daily'?'Каждый день':'Однократно'}</span></div></div><span class="xp">${m.done?'+'+XP_PER_MISSION+' XP':XP_PER_MISSION+' XP'}</span><button class="iconbtn edit" onclick="editMission('${m.id}')" aria-label="Изменить задачу" title="Изменить"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button></div>`;
@@ -372,7 +373,7 @@ function renderHistory(){
 }
 
 /* ---------- Навигация и модалки ---------- */
-const parentScreen={achievements:'profile',stats:'profile',history:'profile',settings:'profile',userprofile:'friends',profedit:'profile',privacy:'profile',owner:'profile'};
+const parentScreen={missions:'dashboard',ranks:'dashboard',skills:'dashboard',achievements:'dashboard',history:'dashboard',settings:'profile',userprofile:'friends',privacy:'profile',owner:'profile'};
 function showScreen(id){
  const nb=[...document.querySelectorAll('.nav button')].find(x=>x.dataset.screen===id&&x.offsetParent!==null),navId=nb?id:(parentScreen[id]||id);
  document.querySelectorAll('.screen').forEach(x=>x.classList.toggle('active',x.id===id));
@@ -380,6 +381,7 @@ function showScreen(id){
  window.scrollTo({top:0,behavior:'smooth'});
  if(id==='dashboard')generateBriefing();
  if(id==='settings'&&window.renderSettings)renderSettings();
+ if(window.FormUI)FormUI.onScreen(id);
  if(window.FormSocial)FormSocial.onScreen(id);
  if(id==='skills'){treeApply();setTimeout(()=>pulse.clear(),2000)}
 }
