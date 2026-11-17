@@ -23,12 +23,24 @@ function sync(r){
 /* активный раздел: подсветка чипа и прокрутка к нему */
 function onScreen(id){
   document.documentElement.dataset.screen=id;
+  const sc=$('chips');
   document.querySelectorAll('#chips button').forEach(b=>{
     const on=b.dataset.screen===id;
-    b.classList.toggle('on',on);b.setAttribute('aria-selected',on);
-    if(on&&b.scrollIntoView)b.scrollIntoView({inline:'center',block:'nearest',behavior:RM()?'auto':'smooth'});
+    b.classList.toggle('on',on);
+    b.setAttribute('aria-selected',String(on));
+    // Прокручиваем только горизонтальную ленту чипов.
+    // scrollIntoView() мог одновременно сдвигать всю страницу по вертикали.
+    if(on&&sc){
+      const br=b.getBoundingClientRect(),sr=sc.getBoundingClientRect();
+      const left=sc.scrollLeft+(br.left-sr.left)-(sc.clientWidth-b.offsetWidth)/2;
+      sc.scrollTo({left:Math.max(0,left),behavior:RM()?'auto':'smooth'});
+    }
   });
-  const h=$('hdr');if(h)h.classList.remove('compact');
+  const h=$('hdr');
+  if(h)h.classList.remove('compact');
+  // Синхронизируем направление прокрутки после смены экрана,
+  // чтобы старое значение не сворачивало шапку повторно.
+  lastY=window.scrollY||0;
 }
 
 /* на телефоне верхняя строка шапки уходит при прокрутке вниз, чипы остаются */
