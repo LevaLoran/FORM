@@ -55,18 +55,12 @@ window.renderSettings=function(){
   buildLangs();renderReset();
   const nm=$('setName');if(nm&&document.activeElement!==nm){nm.value=(state.callsign==='ПОЛЬЗОВАТЕЛЬ')?i18('ПОЛЬЗОВАТЕЛЬ'):state.callsign}
   mark($('segTheme'),document.documentElement.dataset.theme==='dark'?'dark':'light');
-  mark($('segGlass'),document.documentElement.dataset.glass==='on'?'on':'off');
   mark($('segAnim'),state.anim==='off'?'off':'on');
   mark($('segSound'),state.sound==='off'?'off':'on');
   if(window.FormI18n){
     document.querySelectorAll('#langGrid .lp-b').forEach(b=>{const on=b.dataset.c===FormI18n.lang;b.classList.toggle('on',on);b.setAttribute('aria-checked',on)});
   }
 };
-
-function applyGlass(on){
-  if(on)document.documentElement.dataset.glass='on';
-  else delete document.documentElement.dataset.glass;
-}
 
 function init(){
   const rl=$('xpResetList');
@@ -88,14 +82,6 @@ function init(){
     const b=e.target.closest('button');if(!b)return;
     applyTheme(b.dataset.v);state.theme=b.dataset.v;save();renderSettings();
   });
-  const sg=$('segGlass');
-  if(sg)sg.addEventListener('click',e=>{
-    const b=e.target.closest('button');if(!b)return;
-    const on=b.dataset.v==='on';
-    applyGlass(on);
-    if(on)state.glass='on';else delete state.glass;
-    save();renderSettings();
-  });
   const ss=$('segSound');
   if(ss)ss.addEventListener('click',e=>{
     const b=e.target.closest('button');if(!b)return;
@@ -111,8 +97,6 @@ function init(){
     if(on)delete state.anim;else state.anim='off';
     save();renderSettings();
   });
-  // restore glass on load
-  if(state.glass==='on')applyGlass(true);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
 else init();

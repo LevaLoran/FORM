@@ -124,7 +124,6 @@ window.formApplyState=function(d){
  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}catch(e){}
  if(idbOk)idbSet(IDB_KEY,state).catch(()=>{});
  if(state.theme&&window.applyTheme)applyTheme(state.theme);
- if(state.glass==='on')document.documentElement.dataset.glass='on';else delete document.documentElement.dataset.glass;
  if(state.lang&&window.FormI18n&&FormI18n.lang!==state.lang)FormI18n.setLang(state.lang,{silent:true});
  if(window.applyAnim)applyAnim(state.anim!=='off');
  render();generateBriefing();renderData();window.renderSettings&&renderSettings();
@@ -150,7 +149,6 @@ async function boot(){
  const c=[a,b].filter(x=>x&&typeof x==='object').sort((x,y)=>(y.updated||0)-(x.updated||0)||(y.xp||0)-(x.xp||0));
  state=normalize(c[0]||null);ready=true;
  if(state.theme){if(window.applyTheme)applyTheme(state.theme)}else state.theme=document.documentElement.dataset.theme==='dark'?'dark':'light';
- if(state.glass==='on')document.documentElement.dataset.glass='on';else delete document.documentElement.dataset.glass;
  if(state.lang&&window.FormI18n&&FormI18n.lang!==state.lang)FormI18n.setLang(state.lang,{silent:true});else if(!state.lang&&window.FormI18n)state.lang=FormI18n.lang;
  if(window.applyAnim)applyAnim(state.anim!=='off');
  try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist()}catch(e){}
@@ -536,7 +534,7 @@ function crest(i){
   ring(12,18,2)+'<circle cx="24" cy="24" r="10"/>'+D(24,24,3),
   ring(12,19.5,2.1)+ring(6,12,2.1,.52)+'<circle cx="24" cy="24" r="5.5"/>'+D(24,24,2)
  ];
- return `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">${G[i]}</svg>`;
+ return `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">${G[i]}</svg>`;
 }
 /* ---------- Активность за 7 дней ---------- */
 function renderWeek(){
