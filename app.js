@@ -98,7 +98,7 @@ function normalize(raw){
  return s;
 }
 let state=load();
-const APP_VERSION='Бета 0.16.1',DB_NAME='lifeProtocolDB',DB_VER=1;
+const APP_VERSION='RELEASE 1.0',DB_NAME='lifeProtocolDB',DB_VER=1;
 let dbp=null,ready=false,idbOk=true;
 const getDb=()=>dbp||(dbp=new Promise((res,rej)=>{const r=indexedDB.open(DB_NAME,DB_VER);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('kv'))r.result.createObjectStore('kv')};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}));
 const idbGet=k=>getDb().then(db=>new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}));
@@ -124,6 +124,7 @@ window.formApplyState=function(d){
  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}catch(e){}
  if(idbOk)idbSet(IDB_KEY,state).catch(()=>{});
  if(state.theme&&window.applyTheme)applyTheme(state.theme);
+ if(state.glass==='on')document.documentElement.dataset.glass='on';else delete document.documentElement.dataset.glass;
  if(state.lang&&window.FormI18n&&FormI18n.lang!==state.lang)FormI18n.setLang(state.lang,{silent:true});
  if(window.applyAnim)applyAnim(state.anim!=='off');
  render();generateBriefing();renderData();window.renderSettings&&renderSettings();
@@ -149,6 +150,7 @@ async function boot(){
  const c=[a,b].filter(x=>x&&typeof x==='object').sort((x,y)=>(y.updated||0)-(x.updated||0)||(y.xp||0)-(x.xp||0));
  state=normalize(c[0]||null);ready=true;
  if(state.theme){if(window.applyTheme)applyTheme(state.theme)}else state.theme=document.documentElement.dataset.theme==='dark'?'dark':'light';
+ if(state.glass==='on')document.documentElement.dataset.glass='on';else delete document.documentElement.dataset.glass;
  if(state.lang&&window.FormI18n&&FormI18n.lang!==state.lang)FormI18n.setLang(state.lang,{silent:true});else if(!state.lang&&window.FormI18n)state.lang=FormI18n.lang;
  if(window.applyAnim)applyAnim(state.anim!=='off');
  try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist()}catch(e){}

@@ -1,9 +1,9 @@
-/* FORM. v0.18 — оболочка интерфейса, ASCII-элементы, анимации. Подключается последним. */
+/* FORM RELEASE 1.0 — оболочка интерфейса, анимации. Подключается последним. */
 :root{--navh:66px}
 
-/* ---------- шапка: управление сверху, ниже строка чипов с разделами ---------- */
+/* ---------- шапка + чипы ---------- */
 header{display:block;padding:calc(10px + env(safe-area-inset-top,0px)) 20px 8px}
-.hrow{display:flex;align-items:center;gap:10px;max-height:56px;overflow:hidden;transition:max-height .3s cubic-bezier(.2,.8,.2,1),opacity .2s}
+.hrow{display:flex;align-items:center;gap:10px;max-height:56px;overflow:hidden}
 .hbrand{flex:1;min-width:0}
 header .brand,header .status{display:block}
 .hav{border-radius:50%;transition:transform .2s}
@@ -13,16 +13,16 @@ header .brand,header .status{display:block}
 .topright .iconbtn{padding:8px}
 .topright #dateTop{display:none}
 header.compact .hrow{max-height:0;opacity:0}
-.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:8px 20px 2px 0;margin-right:-20px;scroll-snap-type:x proximity}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:10px 20px 4px 0;margin-right:-20px;scroll-snap-type:x proximity}
 .chips::-webkit-scrollbar{display:none}
-.chips button{flex:none;border:0;border-radius:999px;background:var(--bg2);color:var(--ink);padding:9px 15px;font:600 13px/1 var(--sans);scroll-snap-align:start;transition:background .2s,color .2s,transform .15s}
+.chips button{flex:none;border:0;border-radius:var(--r-pill);background:var(--bg2);color:var(--ink);padding:10px 16px;font:600 13px/1 var(--sans);scroll-snap-align:start;transition:background .22s,color .22s,transform .15s,box-shadow .2s}
 .chips button:active{transform:scale(.95)}
-.chips button.on{background:var(--ink);color:var(--bg)}
+.chips button.on{background:var(--ink);color:var(--bg);box-shadow:0 2px 10px color-mix(in srgb,var(--ink) 22%,transparent)}
 @media(hover:hover){.chips button:not(.on):hover{background:var(--line)}}
 
-/* ---------- нижняя навигация: четыре раздела ---------- */
+/* ---------- нижняя навигация ---------- */
 .nav{grid-template-columns:repeat(4,1fr);padding-top:4px}
-.nav button{font:10px var(--mono);letter-spacing:.06em}
+.nav button{font:10px var(--mono);letter-spacing:.05em}
 .nav button span{display:block}
 .nav button svg{transition:transform .2s}
 .nav button.active svg{animation:pop .4s ease}
@@ -31,7 +31,7 @@ header.compact .hrow{max-height:0;opacity:0}
 html[data-auth=in] body{padding-bottom:calc(var(--navh) + 78px + env(safe-area-inset-bottom,0px))}
 
 /* ---------- мини-панель прогресса ---------- */
-.mini{position:fixed;z-index:9;left:8px;right:8px;bottom:calc(var(--navh) + env(safe-area-inset-bottom,0px) + 6px);height:54px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;display:flex;align-items:center;gap:6px;padding:0 8px;box-shadow:0 8px 24px rgba(0,0,0,.16);overflow:hidden;animation:miniIn .5s cubic-bezier(.2,.8,.2,1) both}
+.mini{position:fixed;z-index:9;left:10px;right:10px;bottom:calc(var(--navh) + env(safe-area-inset-bottom,0px) + 8px);height:56px;background:var(--surf);border:1px solid var(--line);border-radius:var(--r-lg);display:flex;align-items:center;gap:8px;padding:0 10px;box-shadow:var(--shadow-lg);overflow:hidden;animation:miniIn .5s cubic-bezier(.2,.8,.2,1) both}
 html:not([data-auth=in]) .mini,html[data-screen=profile] .mini{display:none}
 .mini-main{flex:1;display:flex;align-items:center;gap:10px;min-width:0;background:none;border:0;padding:0;text-align:left;color:inherit}
 .mini-crest{width:34px;height:34px;flex:none;color:var(--ink)}
