@@ -38,8 +38,12 @@ function human(e){
 /* ---------- начисление XP за совместное выполнение (идемпотентно) ---------- */
 function grantSharedReward(task){
   if(!task||!task.id||typeof state==='undefined')return;
-  const key='shared:'+task.id;
-  if(state.completed.some(c=>c.id===key))return; // уже начислено на этом аккаунте
+  // Ключ должен переживать cleanId() в app.js (он выкидывает ':'). Используем '_'.
+  // Также учитываем старые варианты ('shared:...' и 'shared'+id без разделителя после очистки).
+  const key='shared_'+task.id;
+  const oldKeyColon='shared:'+task.id;
+  const oldKeyClean='shared'+String(task.id).replace(/[^\w-]/g,'');
+  if(state.completed.some(c=>c.id===key||c.id===oldKeyColon||c.id===oldKeyClean))return; // уже начислено на этом аккаунте
   const baseXp=Math.max(10,Math.min(500,+task.xp||50));
   const bonusPct=Math.max(0,+task.bonus_pct||25);
   const totalXp=Math.round(baseXp*(1+bonusPct/100));
