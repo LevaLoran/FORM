@@ -201,7 +201,7 @@ async function openBackups(){
   const list=el.querySelector('#bkList');
   data.forEach(b=>{
     const row=document.createElement('div');row.className='sa-l';
-    row.innerHTML='<b>'+new Date(b.created_at).toLocaleString('ru-RU')+'</b><span>'+(+b.xp||0)+' XP</span>';
+    row.innerHTML='<b>'+new Date(b.created_at).toLocaleString(loc())+'</b><span>'+(+b.xp||0)+' XP</span>';
     const btn=document.createElement('button');btn.className='btn ghost small';btn.textContent='Вернуть';
     btn.onclick=()=>restore(b.id,el);row.appendChild(btn);list.appendChild(row);
   });

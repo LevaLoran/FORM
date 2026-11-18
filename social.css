@@ -185,3 +185,8 @@ textarea.field{resize:vertical;min-height:84px;font-family:inherit;line-height:1
 .f-crown::before{background:repeating-conic-gradient(var(--ink) 0 38deg,transparent 38deg 45deg);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - var(--s)*.09),#000 calc(100% - var(--s)*.09));mask:radial-gradient(farthest-side,transparent calc(100% - var(--s)*.09),#000 calc(100% - var(--s)*.09))}
 .f-void::before{border:calc(var(--s)*.05) solid var(--ink);box-shadow:inset 0 0 calc(var(--s)*.2) var(--pc),0 0 calc(var(--s)*.25) var(--pc)}
 html[data-anim=on] .f-aurora::before{animation:pfspin 10s linear infinite}
+
+/* ===== v0.17: музыкальный статус и совместная активность ===== */
+.pc-music{display:flex;align-items:center;gap:8px;margin-top:8px;padding:7px 10px;border-radius:4px;background:color-mix(in srgb,var(--c-CREATIVITY) 10%,var(--bg2));border:1px solid color-mix(in srgb,var(--c-CREATIVITY) 30%,var(--line));font-size:13px;overflow-wrap:anywhere}
+.pc-music-ico{font:700 14px var(--mono);color:var(--c-CREATIVITY);flex:none}
+.pc-music-txt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

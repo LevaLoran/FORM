@@ -38,7 +38,12 @@ const ERR={
   too_many_tags:'У пользователя уже 3 тега',
   item_invalid:'Неизвестный предмет',
   frame_locked:'Эта рамка вам недоступна',
-  name_reserved:'Это название совпадает с тегом другого пользователя'
+  name_reserved:'Это название совпадает с тегом другого пользователя',
+  shared_invites_closed:'Пользователь ограничил приглашения в совместные задания',
+  task_not_found:'Совместное задание не найдено',
+  not_participant:'Вы не являетесь участником этого задания',
+  already_invited:'Пользователь уже приглашён в это задание',
+  too_many_participants:'Достигнут лимит участников задания (макс. 10)'
 };
 function human(e){
   const m=String(e&&e.message||''),c=String(e&&e.code||'');
@@ -246,6 +251,10 @@ function cardHTML(v,o){
   if(v.online===true)h+='<div class="pc-pres on">'+esc(i18('В сети'))+'</div>';
   else if(v.online===false||v.last_seen)h+='<div class="pc-pres">'+esc(v.last_seen?i18('Был(а) в сети {t}',{t:ago(v.last_seen)}):i18('Не в сети'))+'</div>';
   if(v.status)h+='<div class="pc-status" data-nt>'+esc(v.status)+'</div>';
+  if(v.music_status&&v.music_status.title){
+    const ms=v.music_status;
+    h+='<div class="pc-music" data-nt><span class="pc-music-ico" aria-hidden="true">♪</span><span class="pc-music-txt"><b>'+esc(ms.title)+'</b>'+(ms.artist?' — '+esc(ms.artist):'')+'</span></div>';
+  }
   if(v.bio)h+='<div class="pc-sec"><div class="tiny">'+esc(i18('О себе'))+'</div><p class="pc-bio" data-nt>'+esc(v.bio)+'</p></div>';
   if(v.badges){
     const all=medals.filter(m=>!pinned.includes(m));
@@ -276,7 +285,7 @@ function actionsHTML(d){
   let h='';
   if(d.preview)return '';
   if(d.blocked_by_me)h=b('unblock','Разблокировать','secondary');
-  else if(rel==='friend')h='<span class="tag">'+esc(i18('В друзьях'))+'</span>';
+  else if(rel==='friend')h='<span class="tag">'+esc(i18('В друзьях'))+'</span>'+(d.can_invite_task!==false?'<button type="button" class="btn small secondary" data-act="invite_task" data-id="'+esc(id)+'">'+esc(i18('Пригласить в задание'))+'</button>':'');
   else if(rel==='incoming')h=b('accept','Принять')+b('decline','Отклонить','ghost');
   else if(rel==='outgoing')h='<span class="tag">'+esc(i18('Заявка отправлена'))+'</span>'+b('cancel','Отменить','ghost');
   else if(d.can_request)h=b('add','Добавить в друзья');
@@ -309,6 +318,7 @@ async function act(a,id){
     if(a==='copylink')return copyLink(id);
     if(a==='menu')return openMenu(id);
     if(a==='open'){closeModal();return openUser(id)}
+    if(a==='invite_task'){if(window.FormSharedTasks)window.FormSharedTasks.openInviteFriendModal(id,nameOf(id));return}
     if(a==='add'){const r=await rpc('send_friend_request',{p_form_id:id});toast(r&&r.state==='friend'?i18('Вы теперь друзья'):i18('Заявка отправлена'))}
     else if(a==='accept'){await rpc('respond_friend_request',{p_form_id:id,p_accept:true});toast(i18('Заявка принята'))}
     else if(a==='decline'){await rpc('respond_friend_request',{p_form_id:id,p_accept:false});toast(i18('Заявка отклонена'))}
@@ -335,7 +345,10 @@ const incoming=()=>S.friends.filter(f=>f.relation==='incoming');
 const outgoing=()=>S.friends.filter(f=>f.relation==='outgoing');
 const friendsOnly=()=>S.friends.filter(f=>f.relation==='friend');
 function presenceLine(f){
-  if(f.status)return clean(f.status);
+  const parts=[];
+  if(f.music_status&&f.music_status.title)parts.push('♪ '+clean(f.music_status.title)+(f.music_status.artist?' — '+clean(f.music_status.artist):''));
+  if(f.status)parts.push(clean(f.status));
+  if(parts.length)return parts.join(' · ');
   if(f.online===true)return i18('В сети');
   if(f.last_seen)return i18('Был(а) в сети {t}',{t:ago(f.last_seen)});
   return '';
@@ -365,8 +378,15 @@ function renderFriends(){
   if(S.tab==='all'||S.tab==='on'){
     let l=friendsOnly();if(S.tab==='on')l=l.filter(f=>f.online===true);
     l=l.slice().sort((a,b)=>(b.online===true)-(a.online===true));
-    box.innerHTML=l.length?'<div class="sectiontitle"><span>'+esc(i18(S.tab==='on'?'В сети':'Все друзья'))+'</span><span>'+l.length+'</span></div>'+l.map(u=>rowHTML(u,S.tab)).join(''):
-      '<div class="empty">'+esc(i18(S.tab==='on'?'Сейчас никого из друзей нет в сети.':'Пока нет друзей. Найдите людей по FORM ID или имени.'))+'</div>'+(S.tab==='all'?'<button type="button" class="btn secondary small" data-tab="add">'+esc(i18('Добавить друга'))+'</button>':'');
+    let feedHtml='';
+    if(S.tab==='all'&&window.FormSharedTasks){
+      feedHtml='<div id="friendsSharedFeed"></div>';
+    }
+    box.innerHTML=(l.length?'<div class="sectiontitle"><span>'+esc(i18(S.tab==='on'?'В сети':'Все друзья'))+'</span><span>'+l.length+'</span></div>'+l.map(u=>rowHTML(u,S.tab)).join(''):
+      '<div class="empty">'+esc(i18(S.tab==='on'?'Сейчас никого из друзей нет в сети.':'Пока нет друзей. Найдите людей по FORM ID или имени.'))+'</div>'+(S.tab==='all'?'<button type="button" class="btn secondary small" data-tab="add">'+esc(i18('Добавить друга'))+'</button>':''))+feedHtml;
+    if(S.tab==='all'&&window.FormSharedTasks){
+      window.FormSharedTasks.renderFriendsFeed($('friendsSharedFeed'));
+    }
   }else if(S.tab==='pend'){
     const i=incoming(),o=outgoing();
     box.innerHTML=(i.length?'<div class="sectiontitle"><span>'+esc(i18('Входящие'))+'</span><span>'+i.length+'</span></div>'+i.map(u=>rowHTML(u,'in')).join(''):'')+
@@ -408,8 +428,11 @@ async function loadUser(id,quiet){
 function drawUser(){
   const box=$('userBody'),V=S.viewing,d=V&&V.data;if(!box)return;
   if(!d||d.error){box.innerHTML='<div class="empty">'+esc(i18('Профиль недоступен или не существует.'))+'</div>';return}
-  box.innerHTML='<div id="userCard"></div>';
+  box.innerHTML='<div id="userCard"></div><div id="userSharedActivity"></div>';
   showCard($('userCard'),d.profile,{actions:actionsHTML(d)});
+  if(window.FormSharedTasks&&d.relation==='friend'&&!d.preview){
+    window.FormSharedTasks.renderUserSharedActivity($('userSharedActivity'),d.profile);
+  }
 }
 function openUser(id){
   id=clean(id).toUpperCase().trim();
@@ -464,6 +487,10 @@ function notifLine(n,plain){
   const a=n.actor,nm=a?dispName(a):'';
   if(n.type==='friend_request')return i18('{n} хочет добавить вас в друзья',{n:nm});
   if(n.type==='friend_accepted')return i18('{n} принял(а) вашу заявку в друзья',{n:nm});
+  if(n.type==='shared_task_invite')return i18('{n} пригласил(а) вас в совместное задание «{t}»',{n:nm,t:clean(n.data&&n.data.title)});
+  if(n.type==='shared_task_progress')return i18('{n} обновил(а) прогресс в задании «{t}» ({p}%)',{n:nm,t:clean(n.data&&n.data.title),p:Math.round(+(n.data&&n.data.pct)||0)});
+  if(n.type==='shared_task_done')return i18('{n} выполнил(а) свою часть задания «{t}»',{n:nm,t:clean(n.data&&n.data.title)});
+  if(n.type==='shared_task_completed')return i18('Совместное задание «{t}» полностью выполнено! +{xp} XP',{t:clean(n.data&&n.data.title),xp:+(n.data&&n.data.xp)||0});
   if(n.data&&n.data.k==='username_reset')return i18('Из соображений приватности ваше имя пользователя заменено: раньше оно было похоже на адрес почты. Новое имя можно выбрать в редакторе профиля.');
   const k=n.data&&n.data.k;
   if(k==='welcome')return plain?i18('Добро пожаловать в FORM'):i18('Добро пожаловать в FORM. У вас появился собственный FORM ID: найдите друзей, оформите профиль и настройте приватность.');
@@ -484,10 +511,12 @@ function drawNotifs(){
   if(!S.notifs.length){box.innerHTML='<div class="empty">'+esc(i18('Уведомлений нет.'))+'</div>';return}
   box.innerHTML=S.notifs.map(n=>{
     const a=n.actor,pending=n.type==='friend_request'&&a&&incoming().some(f=>f.id===a.id);
+    const taskInv=n.type==='shared_task_invite'&&n.data&&n.data.task_id&&window.FormSharedTasks&&window.FormSharedTasks.hasPendingInvite(n.data.task_id);
     const ico=n.type==='system'?'<span class="av nsys" style="--s:40px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v5M12 16.5v.01"/></svg></span>':avHTML(a||{display_name:'?'},40,{noDot:true});
     return '<div class="nrow'+(n.read?'':' unread')+'">'+(n.read?'':'<i class="udot" aria-hidden="true"></i>')+
       '<button type="button" class="nmain"'+(a?' data-act="open" data-id="'+esc(a.id)+'"':'')+'>'+ico+'<span class="ntxt"><span data-nt>'+esc(notifLine(n))+'</span><span class="tiny">'+esc(ago(n.created_at))+'</span></span></button>'+
-      (pending?'<span class="fract"><button type="button" class="btn small" data-act="accept" data-id="'+esc(a.id)+'">'+esc(i18('Принять'))+'</button><button type="button" class="btn small ghost" data-act="decline" data-id="'+esc(a.id)+'">'+esc(i18('Отклонить'))+'</button></span>':'')+'</div>';
+      (pending?'<span class="fract"><button type="button" class="btn small" data-act="accept" data-id="'+esc(a.id)+'">'+esc(i18('Принять'))+'</button><button type="button" class="btn small ghost" data-act="decline" data-id="'+esc(a.id)+'">'+esc(i18('Отклонить'))+'</button></span>':'')+
+      (taskInv?'<span class="fract"><button type="button" class="btn small" data-st-act="accept_invite" data-tid="'+esc(n.data.task_id)+'">'+esc(i18('Вступить'))+'</button><button type="button" class="btn small ghost" data-st-act="decline_invite" data-tid="'+esc(n.data.task_id)+'">'+esc(i18('Отклонить'))+'</button></span>':'')+'</div>';
   }).join('');
 }
 
@@ -501,9 +530,12 @@ const PRIV=[
   ['online','Онлайн-статус','Кто видит, что вы сейчас в сети',[['everyone','Все'],['friends','Друзья'],['nobody','Никто']]],
   ['last_seen','Последняя активность','Кто видит, когда вы были в сети',[['everyone','Все'],['friends','Друзья'],['nobody','Никто']]],
   ['profile','Профиль','Кто может открыть ваш профиль целиком',[['everyone','Все'],['friends','Друзья'],['nobody','Никто']]],
-  ['find','Поиск','Кто может найти вас по имени',[['everyone','По имени и ID'],['id','Только по ID']]]
+  ['find','Поиск','Кто может найти вас по имени',[['everyone','По имени и ID'],['id','Только по ID']]],
+  ['music_status','Музыкальный статус','Кто видит, какую музыку вы слушаете сейчас',[['everyone','Все'],['friends','Друзья'],['nobody','Никто']]],
+  ['shared_tasks','Совместные задания','Кто может приглашать вас в совместные задания',[['friends','Друзья'],['nobody','Никто']]],
+  ['shared_activity','Совместная активность','Показывать общие задания и прогресс в ленте друзей',[['friends','Друзья'],['nobody','Никто']]]
 ];
-const HIDE=[['bio','О себе'],['status','Статус'],['links','Ссылки'],['badges','Значки и достижения'],['stats','Статистика'],['registered','Дата регистрации'],['banner','Баннер и фон']];
+const HIDE=[['bio','О себе'],['status','Статус'],['music_status','Музыкальный статус'],['links','Ссылки'],['badges','Значки и достижения'],['stats','Статистика'],['registered','Дата регистрации'],['banner','Баннер и фон']];
 function swHTML(k,on){return '<button type="button" class="sw" role="switch" aria-checked="'+(!!on)+'" data-hide="'+k+'"><i></i></button>'}
 function renderPrivacy(){
   const inl=cur()==='profile',box=$(inl?'pePriv':'privBody'),other=$(inl?'privBody':'pePriv');
@@ -534,7 +566,8 @@ const GIF_MAX={avatar:450000,banner:650000,bg:650000}; // байты файла:
 let prevTm=null;
 function draftFrom(m){
   const th=m.theme||{};
-  return {display:myName(),username:m.username,bio:m.bio||'',status:m.status||'',links:(m.links||[]).map(l=>({label:l.label||'',url:l.url||''})),
+  const ms=m.music_status||{};
+  return {display:myName(),username:m.username,bio:m.bio||'',status:m.status||'',musicTitle:ms.title||'',musicArtist:ms.artist||'',links:(m.links||[]).map(l=>({label:l.label||'',url:l.url||''})),
     color:th.color||'#2f5bea',color2:th.color2||'',banner:th.banner||'color',deco:th.deco||'dots',bg:th.bg||'none',frame:th.frame||'none',
     banner_image:m.banner_image||null,bg_image:m.bg_image||null,avatar_anim:m.avatar_anim||null,pinned:(m.pinned||[]).slice(),hide:((m.privacy||{}).hide||[]).slice(),
     bannerCh:false,bgCh:false,avCh:false,avFirst:null,dirty:false};
@@ -547,6 +580,7 @@ function viewFromDraft(){
     avatar:state.avatar||(D.avFirst&&D.avFirst.avatar)||null,avatar_thumb:state.avatar||null,avatar_anim:D.avatar_anim,theme:th,online:true,
     banner_image:D.banner_image,bg_image:D.bg_image};
   if(!hide.includes('status'))v.status=D.status;
+  if(!hide.includes('music_status')&&D.musicTitle)v.music_status={title:D.musicTitle,artist:D.musicArtist||''};
   if(!hide.includes('bio'))v.bio=D.bio;
   if(!hide.includes('links'))v.links=D.links.filter(l=>safeUrl(l.url));
   if(!hide.includes('registered'))v.registered_at=m.registered_at;
@@ -615,6 +649,7 @@ function renderEditor(){
    '<label for="peName" style="margin-top:0">'+esc(i18('Отображаемое имя'))+'</label><input class="field" id="peName" maxlength="18" autocomplete="off" spellcheck="false" value="'+esc(D.display)+'" placeholder="'+esc(i18('ПОЛЬЗОВАТЕЛЬ'))+'">'+
    '<label for="peUser">'+esc(i18('Имя пользователя'))+'</label><div class="atfield"><span>@</span><input class="field" id="peUser" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false" value="'+esc(D.username)+'"'+(left>0?' disabled':'')+'></div><div class="tiny hint">'+esc(left>0?i18('Следующая смена имени пользователя через {n} дн.',{n:left}):i18('3–20 символов: латиница, цифры, _ и точка. Менять можно раз в 7 дней.'))+'</div>'+
    '<label for="peStatus">'+esc(i18('Статус'))+'</label><input class="field" id="peStatus" maxlength="60" autocomplete="off" value="'+esc(D.status)+'" placeholder="'+esc(i18('Чем занят сейчас'))+'">'+
+   '<label for="peMusicTitle">'+esc(i18('Музыкальный статус'))+'</label><div class="row" style="gap:8px"><input class="field" id="peMusicTitle" maxlength="60" autocomplete="off" value="'+esc(D.musicTitle)+'" placeholder="'+esc(i18('Название трека'))+'"><input class="field" id="peMusicArtist" maxlength="60" autocomplete="off" value="'+esc(D.musicArtist)+'" placeholder="'+esc(i18('Исполнитель'))+'"></div>'+
    '<label for="peBio">'+esc(i18('О себе'))+'</label><textarea class="field" id="peBio" maxlength="200" rows="3" placeholder="'+esc(i18('Пара слов о вас'))+'">'+esc(D.bio)+'</textarea><div class="tiny hint" id="peBioN"></div>'+
    '<div class="tiny" style="margin:18px 0 8px">'+esc(i18('Ссылки'))+'</div><div id="peLinks"></div>'+
    asc('03 · Персонализация')+
@@ -633,7 +668,8 @@ async function saveEditor(){
   const D=S.D;if(!D)return;
   if(D.username!==S.me.username&&!/^[A-Za-z0-9_.]{3,20}$/.test(D.username))return toast(i18(ERR.username_invalid));
   for(const l of D.links)if((l.url||l.label)&&!safeUrl(l.url))return toast(i18('Ссылка должна начинаться с http:// или https://'));
-  const p={display_name:D.display,bio:D.bio,status:D.status,links:D.links.filter(l=>safeUrl(l.url)),
+  const msObj=D.musicTitle.trim()?{title:D.musicTitle.trim(),artist:D.musicArtist.trim(),updated_at:new Date().toISOString()}:null;
+  const p={display_name:D.display,bio:D.bio,status:D.status,music_status:msObj,links:D.links.filter(l=>safeUrl(l.url)),
     theme:{color:D.color,color2:D.color2||null,banner:D.banner,deco:D.deco,bg:D.bg,frame:frameOk(D.frame)?D.frame:'none'},pinned:D.pinned,privacy:{hide:D.hide}};
   if(D.username!==S.me.username)p.username=D.username;
   if(D.bannerCh)p.banner_image=D.banner_image;
@@ -799,6 +835,8 @@ function onInput(e){
   if(t.id==='peName'&&D){D.display=t.value.trim();dirty()}
   else if(t.id==='peUser'&&D){D.username=t.value.trim();dirty()}
   else if(t.id==='peStatus'&&D){D.status=t.value;dirty()}
+  else if(t.id==='peMusicTitle'&&D){D.musicTitle=t.value;dirty()}
+  else if(t.id==='peMusicArtist'&&D){D.musicArtist=t.value;dirty()}
   else if(t.id==='peBio'&&D){D.bio=t.value;bioCount();dirty()}
   else if(t.id==='peColor'&&D){D.color=t.value;dirty();const o=document.querySelector('#peColors .swatch.on');if(o)o.classList.remove('on')}
   else if(t.id==='peColor2'&&D){D.color2=t.value;dirty();const o=document.querySelector('#peColors2 .swatch.on');if(o)o.classList.remove('on')}
@@ -878,6 +916,7 @@ async function start(client,user){
   window.addEventListener('online',()=>{presence();refreshAll()});
   subscribe();
   await Promise.all([refreshFriends(),refreshUnread(),loadBlocked()]);
+  if(window.FormSharedTasks)await window.FormSharedTasks.start(client,user);
   renderAll();
   // переход по ссылке на профиль (?u=123456)
   let pend=null;try{pend=sessionStorage.getItem('formOpenUser');sessionStorage.removeItem('formOpenUser')}catch(_){}
@@ -901,6 +940,7 @@ document.addEventListener('input',onInput);
 document.addEventListener('change',onChange);
 document.addEventListener('submit',onSubmit);
 
-window.FormSocial={start,touch,onScreen,go,back:goBack,openUser,openEditor,openPreview,
-  open:id=>go(id),get me(){return S.me},get role(){return S.me?S.me.role:'user'}};
+window.FormSocial={start,touch,onScreen,go,back:goBack,openUser,openEditor,openPreview,refreshUnread,
+  open:id=>go(id),get me(){return S.me},get role(){return S.me?S.me.role:'user'},
+  get friends(){return friendsOnly()},avHTML,dispName,tagsHTML,ago,esc,rpc,human,hex};
 })();

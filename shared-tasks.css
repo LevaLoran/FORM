@@ -1,0 +1,43 @@
+/* FORM. v0.17 — совместные задания, прогресс участников, награды и лента совместной активности */
+.st-wrap{margin:18px 0 6px}
+.st-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:24px 0 10px;padding-top:12px;border-top:1px solid var(--line)}
+.st-head .sectiontitle{margin:0;padding:0;border:0;flex:1}
+.st-inv-box{border:1px dashed var(--acc);background:color-mix(in srgb,var(--acc) 5%,var(--surf));border-radius:6px;padding:12px 14px;margin-bottom:14px}
+.st-inv-title{font:600 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--acc);margin-bottom:8px}
+.st-inv-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.st-inv-row:last-child{border-bottom:0;padding-bottom:0}
+.st-card{border:1px solid var(--line);border-radius:6px;padding:14px;background:var(--surf);margin-bottom:10px;transition:border-color .2s,transform .2s}
+.st-card:hover{border-color:var(--ink)}
+.st-card.done{border-color:var(--c-FITNESS);background:color-mix(in srgb,var(--c-FITNESS) 4%,var(--surf))}
+.st-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.st-title{font:700 16px/1.25 var(--sans);margin:0;overflow-wrap:anywhere}
+.st-desc{font-size:13px;color:var(--mut);margin:4px 0 0;overflow-wrap:anywhere}
+.st-badges{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}
+.st-xp{font:700 11px var(--mono);padding:3px 7px;border-radius:3px;background:var(--bg2);color:var(--ink);border:1px solid var(--line)}
+.st-xp.bonus{background:color-mix(in srgb,var(--acc) 14%,var(--bg2));border-color:var(--acc);color:var(--acc)}
+.st-prog-wrap{margin-top:12px}
+.st-prog-meta{display:flex;justify-content:space-between;align-items:center;font:11px var(--mono);color:var(--mut);margin-bottom:5px}
+.st-prog-bar{height:7px;background:var(--bg2);border-radius:4px;overflow:hidden;border:1px solid var(--line)}
+.st-prog-bar i{display:block;height:100%;background:var(--acc);transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.st-card.done .st-prog-bar i{background:var(--c-FITNESS)}
+.st-members{display:grid;gap:6px;margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+.st-mem{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px}
+.st-mem-info{display:flex;align-items:center;gap:8px;min-width:0;flex:1}
+.st-mem-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.st-mem-stat{display:flex;align-items:center;gap:6px;flex:none;font:11px var(--mono)}
+.st-pill{padding:2px 6px;border-radius:3px;font:600 10px var(--mono);letter-spacing:.04em;text-transform:uppercase}
+.st-pill.done{background:color-mix(in srgb,var(--c-FITNESS) 18%,transparent);color:var(--c-FITNESS);border:1px solid color-mix(in srgb,var(--c-FITNESS) 40%,transparent)}
+.st-pill.prog{background:var(--bg2);color:var(--mut);border:1px solid var(--line)}
+.st-pill.pend{background:transparent;color:var(--mut);border:1px dashed var(--line)}
+.st-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--line);flex-wrap:wrap}
+.st-ctrl{display:flex;align-items:center;gap:8px;flex:1;min-width:180px}
+.st-range{flex:1;accent-color:var(--acc);cursor:pointer}
+.st-act{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.st-fpick{display:grid;gap:6px;max-height:200px;overflow-y:auto;border:1px solid var(--line);border-radius:4px;padding:8px;background:var(--bg2)}
+.st-fopt{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;border-radius:4px;background:var(--surf);border:1px solid var(--line);cursor:pointer}
+.st-fopt input{accent-color:var(--acc);width:16px;height:16px;margin:0}
+.st-feed{margin-top:18px}
+.st-feed-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}
+.st-feed-item:last-child{border-bottom:0}
+.st-feed-body{flex:1;min-width:0;overflow-wrap:anywhere}
+.st-feed-title{font-weight:600}
