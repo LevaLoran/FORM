@@ -1,4 +1,4 @@
-/* FORM. v0.16 — оболочка интерфейса в духе Spotify: чипы разделов сверху, мини-панель прогресса,
+/* FORM. v0.18 — оболочка интерфейса: чипы разделов сверху, мини-панель прогресса,
    ASCII-элементы. Логику приложения не трогает: только отображение. */
 (function(){
 'use strict';
@@ -38,23 +38,9 @@ function onScreen(id){
   });
   const h=$('hdr');
   if(h)h.classList.remove('compact');
-  // Синхронизируем направление прокрутки после смены экрана,
-  // чтобы старое значение не сворачивало шапку повторно.
-  lastY=window.scrollY||0;
 }
 
-/* на телефоне верхняя строка шапки уходит при прокрутке вниз, чипы остаются */
-let lastY=0,tick=false;
-addEventListener('scroll',()=>{
-  if(tick)return;tick=true;
-  requestAnimationFrame(()=>{
-    tick=false;
-    const y=scrollY,h=$('hdr');if(!h)return;
-    if(y>70&&y>lastY+4)h.classList.add('compact');
-    else if(y<lastY-4||y<24)h.classList.remove('compact');
-    lastY=y;
-  });
-},{passive:true});
+/* Сворачивание шапки при скролле отключено: изменение max-height вызывало дёрганье на мобильных */
 
 window.FormUI={sync,onScreen,asciiBar};
 try{sync();const a=document.querySelector('.screen.active');onScreen(a?a.id:'dashboard')}catch(_){}

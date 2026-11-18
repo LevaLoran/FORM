@@ -251,10 +251,6 @@ function cardHTML(v,o){
   if(v.online===true)h+='<div class="pc-pres on">'+esc(i18('В сети'))+'</div>';
   else if(v.online===false||v.last_seen)h+='<div class="pc-pres">'+esc(v.last_seen?i18('Был(а) в сети {t}',{t:ago(v.last_seen)}):i18('Не в сети'))+'</div>';
   if(v.status)h+='<div class="pc-status" data-nt>'+esc(v.status)+'</div>';
-  if(v.music_status&&v.music_status.title){
-    const ms=v.music_status;
-    h+='<div class="pc-music" data-nt><span class="pc-music-ico" aria-hidden="true">♪</span><span class="pc-music-txt"><b>'+esc(ms.title)+'</b>'+(ms.artist?' — '+esc(ms.artist):'')+'</span></div>';
-  }
   if(v.bio)h+='<div class="pc-sec"><div class="tiny">'+esc(i18('О себе'))+'</div><p class="pc-bio" data-nt>'+esc(v.bio)+'</p></div>';
   if(v.badges){
     const all=medals.filter(m=>!pinned.includes(m));
@@ -345,10 +341,7 @@ const incoming=()=>S.friends.filter(f=>f.relation==='incoming');
 const outgoing=()=>S.friends.filter(f=>f.relation==='outgoing');
 const friendsOnly=()=>S.friends.filter(f=>f.relation==='friend');
 function presenceLine(f){
-  const parts=[];
-  if(f.music_status&&f.music_status.title)parts.push('♪ '+clean(f.music_status.title)+(f.music_status.artist?' — '+clean(f.music_status.artist):''));
-  if(f.status)parts.push(clean(f.status));
-  if(parts.length)return parts.join(' · ');
+  if(f.status)return clean(f.status);
   if(f.online===true)return i18('В сети');
   if(f.last_seen)return i18('Был(а) в сети {t}',{t:ago(f.last_seen)});
   return '';
@@ -490,7 +483,7 @@ function notifLine(n,plain){
   if(n.type==='shared_task_invite')return i18('{n} пригласил(а) вас в совместное задание «{t}»',{n:nm,t:clean(n.data&&n.data.title)});
   if(n.type==='shared_task_progress')return i18('{n} обновил(а) прогресс в задании «{t}» ({p}%)',{n:nm,t:clean(n.data&&n.data.title),p:Math.round(+(n.data&&n.data.pct)||0)});
   if(n.type==='shared_task_done')return i18('{n} выполнил(а) свою часть задания «{t}»',{n:nm,t:clean(n.data&&n.data.title)});
-  if(n.type==='shared_task_completed')return i18('Совместное задание «{t}» полностью выполнено! +{xp} XP',{t:clean(n.data&&n.data.title),xp:+(n.data&&n.data.xp)||0});
+  if(n.type==='shared_task_completed')return i18('Совместное задание «{t}» полностью выполнено!',{t:clean(n.data&&n.data.title)});
   if(n.data&&n.data.k==='username_reset')return i18('Из соображений приватности ваше имя пользователя заменено: раньше оно было похоже на адрес почты. Новое имя можно выбрать в редакторе профиля.');
   const k=n.data&&n.data.k;
   if(k==='welcome')return plain?i18('Добро пожаловать в FORM'):i18('Добро пожаловать в FORM. У вас появился собственный FORM ID: найдите друзей, оформите профиль и настройте приватность.');
@@ -531,11 +524,10 @@ const PRIV=[
   ['last_seen','Последняя активность','Кто видит, когда вы были в сети',[['everyone','Все'],['friends','Друзья'],['nobody','Никто']]],
   ['profile','Профиль','Кто может открыть ваш профиль целиком',[['everyone','Все'],['friends','Друзья'],['nobody','Никто']]],
   ['find','Поиск','Кто может найти вас по имени',[['everyone','По имени и ID'],['id','Только по ID']]],
-  ['music_status','Музыкальный статус','Кто видит, какую музыку вы слушаете сейчас',[['everyone','Все'],['friends','Друзья'],['nobody','Никто']]],
   ['shared_tasks','Совместные задания','Кто может приглашать вас в совместные задания',[['friends','Друзья'],['nobody','Никто']]],
   ['shared_activity','Совместная активность','Показывать общие задания и прогресс в ленте друзей',[['friends','Друзья'],['nobody','Никто']]]
 ];
-const HIDE=[['bio','О себе'],['status','Статус'],['music_status','Музыкальный статус'],['links','Ссылки'],['badges','Значки и достижения'],['stats','Статистика'],['registered','Дата регистрации'],['banner','Баннер и фон']];
+const HIDE=[['bio','О себе'],['status','Статус'],['links','Ссылки'],['badges','Значки и достижения'],['stats','Статистика'],['registered','Дата регистрации'],['banner','Баннер и фон']];
 function swHTML(k,on){return '<button type="button" class="sw" role="switch" aria-checked="'+(!!on)+'" data-hide="'+k+'"><i></i></button>'}
 function renderPrivacy(){
   const inl=cur()==='profile',box=$(inl?'pePriv':'privBody'),other=$(inl?'privBody':'pePriv');
@@ -566,8 +558,7 @@ const GIF_MAX={avatar:450000,banner:650000,bg:650000}; // байты файла:
 let prevTm=null;
 function draftFrom(m){
   const th=m.theme||{};
-  const ms=m.music_status||{};
-  return {display:myName(),username:m.username,bio:m.bio||'',status:m.status||'',musicTitle:ms.title||'',musicArtist:ms.artist||'',links:(m.links||[]).map(l=>({label:l.label||'',url:l.url||''})),
+  return {display:myName(),username:m.username,bio:m.bio||'',status:m.status||'',links:(m.links||[]).map(l=>({label:l.label||'',url:l.url||''})),
     color:th.color||'#2f5bea',color2:th.color2||'',banner:th.banner||'color',deco:th.deco||'dots',bg:th.bg||'none',frame:th.frame||'none',
     banner_image:m.banner_image||null,bg_image:m.bg_image||null,avatar_anim:m.avatar_anim||null,pinned:(m.pinned||[]).slice(),hide:((m.privacy||{}).hide||[]).slice(),
     bannerCh:false,bgCh:false,avCh:false,avFirst:null,dirty:false};
@@ -580,7 +571,6 @@ function viewFromDraft(){
     avatar:state.avatar||(D.avFirst&&D.avFirst.avatar)||null,avatar_thumb:state.avatar||null,avatar_anim:D.avatar_anim,theme:th,online:true,
     banner_image:D.banner_image,bg_image:D.bg_image};
   if(!hide.includes('status'))v.status=D.status;
-  if(!hide.includes('music_status')&&D.musicTitle)v.music_status={title:D.musicTitle,artist:D.musicArtist||''};
   if(!hide.includes('bio'))v.bio=D.bio;
   if(!hide.includes('links'))v.links=D.links.filter(l=>safeUrl(l.url));
   if(!hide.includes('registered'))v.registered_at=m.registered_at;
@@ -649,7 +639,6 @@ function renderEditor(){
    '<label for="peName" style="margin-top:0">'+esc(i18('Отображаемое имя'))+'</label><input class="field" id="peName" maxlength="18" autocomplete="off" spellcheck="false" value="'+esc(D.display)+'" placeholder="'+esc(i18('ПОЛЬЗОВАТЕЛЬ'))+'">'+
    '<label for="peUser">'+esc(i18('Имя пользователя'))+'</label><div class="atfield"><span>@</span><input class="field" id="peUser" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false" value="'+esc(D.username)+'"'+(left>0?' disabled':'')+'></div><div class="tiny hint">'+esc(left>0?i18('Следующая смена имени пользователя через {n} дн.',{n:left}):i18('3–20 символов: латиница, цифры, _ и точка. Менять можно раз в 7 дней.'))+'</div>'+
    '<label for="peStatus">'+esc(i18('Статус'))+'</label><input class="field" id="peStatus" maxlength="60" autocomplete="off" value="'+esc(D.status)+'" placeholder="'+esc(i18('Чем занят сейчас'))+'">'+
-   '<label for="peMusicTitle">'+esc(i18('Музыкальный статус'))+'</label><div class="row" style="gap:8px"><input class="field" id="peMusicTitle" maxlength="60" autocomplete="off" value="'+esc(D.musicTitle)+'" placeholder="'+esc(i18('Название трека'))+'"><input class="field" id="peMusicArtist" maxlength="60" autocomplete="off" value="'+esc(D.musicArtist)+'" placeholder="'+esc(i18('Исполнитель'))+'"></div>'+
    '<label for="peBio">'+esc(i18('О себе'))+'</label><textarea class="field" id="peBio" maxlength="200" rows="3" placeholder="'+esc(i18('Пара слов о вас'))+'">'+esc(D.bio)+'</textarea><div class="tiny hint" id="peBioN"></div>'+
    '<div class="tiny" style="margin:18px 0 8px">'+esc(i18('Ссылки'))+'</div><div id="peLinks"></div>'+
    asc('03 · Персонализация')+
@@ -668,8 +657,7 @@ async function saveEditor(){
   const D=S.D;if(!D)return;
   if(D.username!==S.me.username&&!/^[A-Za-z0-9_.]{3,20}$/.test(D.username))return toast(i18(ERR.username_invalid));
   for(const l of D.links)if((l.url||l.label)&&!safeUrl(l.url))return toast(i18('Ссылка должна начинаться с http:// или https://'));
-  const msObj=D.musicTitle.trim()?{title:D.musicTitle.trim(),artist:D.musicArtist.trim(),updated_at:new Date().toISOString()}:null;
-  const p={display_name:D.display,bio:D.bio,status:D.status,music_status:msObj,links:D.links.filter(l=>safeUrl(l.url)),
+  const p={display_name:D.display,bio:D.bio,status:D.status,music_status:null,links:D.links.filter(l=>safeUrl(l.url)),
     theme:{color:D.color,color2:D.color2||null,banner:D.banner,deco:D.deco,bg:D.bg,frame:frameOk(D.frame)?D.frame:'none'},pinned:D.pinned,privacy:{hide:D.hide}};
   if(D.username!==S.me.username)p.username=D.username;
   if(D.bannerCh)p.banner_image=D.banner_image;
@@ -835,8 +823,6 @@ function onInput(e){
   if(t.id==='peName'&&D){D.display=t.value.trim();dirty()}
   else if(t.id==='peUser'&&D){D.username=t.value.trim();dirty()}
   else if(t.id==='peStatus'&&D){D.status=t.value;dirty()}
-  else if(t.id==='peMusicTitle'&&D){D.musicTitle=t.value;dirty()}
-  else if(t.id==='peMusicArtist'&&D){D.musicArtist=t.value;dirty()}
   else if(t.id==='peBio'&&D){D.bio=t.value;bioCount();dirty()}
   else if(t.id==='peColor'&&D){D.color=t.value;dirty();const o=document.querySelector('#peColors .swatch.on');if(o)o.classList.remove('on')}
   else if(t.id==='peColor2'&&D){D.color2=t.value;dirty();const o=document.querySelector('#peColors2 .swatch.on');if(o)o.classList.remove('on')}

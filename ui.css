@@ -1,4 +1,4 @@
-/* FORM. v0.16 — оболочка в духе Spotify, ASCII-элементы, анимации. Подключается последним. */
+/* FORM. v0.18 — оболочка интерфейса, ASCII-элементы, анимации. Подключается последним. */
 :root{--navh:66px}
 
 /* ---------- шапка: управление сверху, ниже строка чипов с разделами ---------- */
@@ -30,7 +30,7 @@ header.compact .hrow{max-height:0;opacity:0}
 .nav button:active{transform:scale(.94)}
 html[data-auth=in] body{padding-bottom:calc(var(--navh) + 78px + env(safe-area-inset-bottom,0px))}
 
-/* ---------- мини-панель прогресса (как плеер в Spotify) ---------- */
+/* ---------- мини-панель прогресса ---------- */
 .mini{position:fixed;z-index:9;left:8px;right:8px;bottom:calc(var(--navh) + env(safe-area-inset-bottom,0px) + 6px);height:54px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;display:flex;align-items:center;gap:6px;padding:0 8px;box-shadow:0 8px 24px rgba(0,0,0,.16);overflow:hidden;animation:miniIn .5s cubic-bezier(.2,.8,.2,1) both}
 html:not([data-auth=in]) .mini,html[data-screen=profile] .mini{display:none}
 .mini-main{flex:1;display:flex;align-items:center;gap:10px;min-width:0;background:none;border:0;padding:0;text-align:left;color:inherit}
