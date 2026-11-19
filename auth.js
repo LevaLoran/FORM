@@ -173,7 +173,6 @@ async function enter(u){
   try{await window.__boot()}catch(e){console.error(e)}
   try{await Promise.race([window.FormSync.start(sb,u),new Promise(r=>setTimeout(r,6000))])}catch(e){console.error(e)}
   try{if(window.FormSocial)window.FormSocial.start(sb,u)}catch(e){console.error(e)} // друзья и профиль: без ожидания, интерфейс не задерживается
-  try{if(window.FormNotif)window.FormNotif.start()}catch(e){console.error(e)}
   try{const ca=u.email_confirmed_at&&Date.now()-new Date(u.email_confirmed_at).getTime()<10*60000;if(ca&&url.hadCode&&(u.app_metadata||{}).provider==='email')toast('Почта подтверждена')}catch(_){}
   setTimeout(()=>H.classList.remove('hydrating'),RM()?0:Math.max(0,420-(Date.now()-t0)));
 }

@@ -1,218 +1,189 @@
-# FORM. — SHAPE YOURSELF
+# FORM. — Shape yourself
 
 <div align="center">
 
-[![Открыть приложение](https://img.shields.io/badge/открыть-levaloran.github.io%2FFORM-111111?style=flat)](https://levaloran.github.io/FORM/)
-![Версия](https://img.shields.io/badge/версия-бета%200.18-2563eb?style=flat)
-![PWA](https://img.shields.io/badge/PWA-устанавливается-5a0fc8?style=flat)
-![Языки](https://img.shields.io/badge/языков-12-22863a?style=flat)
+[![Open app](https://img.shields.io/badge/open-levaloran.github.io%2FFORM-111111?style=flat)](https://levaloran.github.io/FORM/)
+![Version](https://img.shields.io/badge/version-beta%200.18.1-2563eb?style=flat)
+![PWA](https://img.shields.io/badge/PWA-installable-5a0fc8?style=flat)
+![Languages](https://img.shields.io/badge/languages-12-22863a?style=flat)
 [![Deploy](https://github.com/LevaLoran/FORM/actions/workflows/pages.yml/badge.svg)](https://github.com/LevaLoran/FORM/actions/workflows/pages.yml)
 
 [![Stars](https://img.shields.io/github/stars/LevaLoran/FORM?style=flat&logo=github)](https://github.com/LevaLoran/FORM/stargazers)
-[![Forks](https://img.shields.io/github/forks/LevaLoran/FORM?style=flat&logo=github)](https://github.com/LevaLoran/FORM/forks)
 [![Issues](https://img.shields.io/github/issues/LevaLoran/FORM?style=flat&logo=github)](https://github.com/LevaLoran/FORM/issues)
-[![Последний коммит](https://img.shields.io/github/last-commit/LevaLoran/FORM?style=flat&logo=github)](https://github.com/LevaLoran/FORM/commits/main)
+[![Last commit](https://img.shields.io/github/last-commit/LevaLoran/FORM?style=flat&logo=github)](https://github.com/LevaLoran/FORM/commits/main)
+
+**A minimal task tracker with RPG progression.**  
+Complete everyday tasks, earn XP, climb ranks, unlock skills — and keep the same progress on every device.
+
+[Open the app](https://levaloran.github.io/FORM/) · [Русский](README.ru.md) · [Українська](README.uk.md) · [Español](README.es.md) · [Deutsch](README.de.md) · [中文](README.zh.md) · [日本語](README.ja.md)
 
 </div>
 
-Трекер задач с RPG-прокачкой для телефона и компьютера. Вы отмечаете выполненные дела, за каждое получаете опыт, растёте в рангах и открываете навыки и награды. Прогресс хранится в аккаунте и одинаково виден на всех ваших устройствах.
+---
 
-Приложение открывается по адресу **https://levaloran.github.io/FORM/**. На телефоне его можно поставить как обычное: «Добавить на главный экран» (iOS) или «Установить приложение» (Android, Chrome).
+## Why FORM.
 
-## Содержание
+Most to-do apps stop at checkboxes. FORM. turns the same daily work into a long-term character build:
 
-- [О проекте](#о-проекте)
-- [Что умеет](#что-умеет)
-- [Как считается прогресс](#как-считается-прогресс)
-- [Запуск у себя](#запуск-у-себя)
-- [Публикация на GitHub Pages](#публикация-на-github-pages)
-- [Подключение Supabase](#подключение-supabase)
-- [Структура проекта](#структура-проекта)
-- [Переводы](#переводы)
-- [Ограничения](#ограничения)
-- [Как помочь](#как-помочь)
-- [История версий](#история-версий)
+- **Tasks** → XP and skill points
+- **Ranks** from Novice to Legend, each with its own emblem
+- **Skill tree** with four tiers per branch and cross-branch requirements
+- **Awards**, streaks, calendar heatmaps
+- **Friends**, public profiles, and **shared tasks**
 
-## О проекте
+The UI stays quiet and readable — light and dark themes, no clutter.
 
-Проект начинался как LIFE PROTOCOL: тёмный интерфейс в военном стиле и «миссии» вместо задач. В бете 0.05 он стал спокойнее и проще (чёрно-белая палитра, точечные цифры, обычные слова вместо армейских), а в 0.06 получил имя FORM.
+## Features
 
-Серверной части в привычном смысле нет. Это статический сайт: HTML, CSS и JavaScript без сборки и фреймворков. Вход и облачное хранение данных делает [Supabase](https://supabase.com), а страницу раздаёт GitHub Pages.
+### Tasks & progress
+- One-off and daily tasks (edit or delete a daily series in one place)
+- Undo a completion the same day — XP and skill points roll back
+- Optional short completion sound
+- Up to 10 tasks per day, 5 XP each
+- 11 ranks with rising XP thresholds
+- Skill tree: 6 branches × 4 tiers × 6 levels
+- 7 awards that stay unlocked even if you reset XP
 
-## Что умеет
+### Statistics
+- Month calendar with per-day details
+- 12-month activity heatmap
+- History, category breakdown, daily report
+- XP reset for the last 7 / 30 / 365 days (awards are kept)
 
-### Задачи и прогресс
-- Задачи на день: создание, правка, удаление, однократные и ежедневные (правка или удаление ежедневной задачи затрагивает всю серию).
-- Отмену выполнения: нажмите на отмеченный кружок ещё раз, и XP, очко навыка и запись в истории вернутся.
-- Короткий победный звук после выполнения. Его можно выключить в настройках.
-- 11 рангов от «Новичка» до «Легенды», у каждого свой знак.
-- Дерево навыков: 3 направления, 6 веток, 3 ступени. Его можно двигать и масштабировать.
-- 7 наград, серии дней подряд, подборка идей для задач.
+### Account & data
+- Sign in with **GitHub** or **email + password**
+- Cloud sync across devices with offline queue and three-way merge
+- Server-side backups and restore from Profile
+- Export / import JSON
+- Avatar of any size (preview on device, original in private storage)
 
-### Статистика
-- Календарь с подробностями по каждому дню.
-- Тепловая карта активности за 12 месяцев.
-- Статистика, история выполненного, отчёт за день (один в сутки, есть архив).
-- Сброс XP за неделю, месяц или год (последние 7, 30 и 365 дней) в настройках.
+### Social
+- Permanent **FORM ID** (`FORM#483921`)
+- Friends, requests, online status, blocks
+- Customizable public profile (banner, frame, bio, links, pinned awards)
+- Privacy controls for profile, invites, and shared-task visibility
+- **Shared tasks** with friends: invite, track progress, split the XP reward
 
-### Аккаунт и данные
-- Вход через GitHub или по почте и паролю, восстановление пароля.
-- Синхронизация между устройствами, работа без сети с отправкой изменений позже.
-- Защита от конфликтов: если два устройства изменили данные одновременно, они сливаются, а не перезаписываются.
-- Серверные резервные копии, откат любой версии из профиля.
-- Экспорт и импорт данных в файл.
-- Аватар любого размера: превью хранится на устройстве, оригинал уходит в приватное хранилище.
+### Interface
+- Bottom nav (Home, Stats, Friends, Profile) + top chips for the rest
+- Mini progress bar (rank + quick “new task”)
+- 12 UI languages
+- Light / dark theme, optional reduced motion
 
-### Друзья и профиль (0.14)
-- Постоянный **FORM ID** вида `FORM#483921`: выдаётся при регистрации, не меняется и не повторяется. Копируется одним нажатием, есть ссылка на профиль `…/FORM/?u=483921`.
-- Отдельно от ID: **@имя пользователя** (уникальное, меняется раз в 7 дней) и **отображаемое имя**.
-- Раздел «Друзья»: Все друзья, В сети, Ожидание (входящие и исходящие заявки), Добавить друга. Поиск по ID, @имени и имени.
-- Заявки: отправить, принять, отклонить, отменить; удаление из друзей без уведомления. Статус «В сети» и время последней активности.
-- Профиль: аватар с рамкой (7 вариантов, часть открывается рангом), баннер (цвет или своё изображение), цвет, декор, фон, о себе, статус, до 4 ссылок, закреплённые достижения, дата регистрации.
-- Публичная страница профиля и предпросмотр «как видят другие» (глазами любого пользователя или друга).
-- Приватность: кто шлёт заявки, видит онлайн и последнюю активность, открывает профиль, находит по имени; скрытие отдельных элементов; блокировки.
-- Уведомления: новая и принятая заявка, системные сообщения, счётчики непрочитанных.
+## How progress works
 
-### Новый интерфейс (0.16)
-- Навигация в духе Spotify: внизу четыре раздела (Главная, Статистика, Друзья, Профиль), сверху чипы остальных разделов (Задачи, Ранги, Навыки, Награды, История) и управление (уведомления, тема, настройки). На компьютере нижняя панель становится боковой, чипы остаются сверху.
-- Мини-панель прогресса над навигацией (как плеер): ранг, ASCII-полоса опыта, кнопка новой задачи.
-- Вкладка «Профиль» теперь одна страница в духе Discord: карточка с баннером и аватаром, а ниже все настройки подряд: аватар и баннер, информация, персонализация, отображение, приватность. Нажатие на аватар в любом месте ведёт на эту страницу. Прогресс (ранг, опыт, награды) переехал во вкладку «Статистика».
-- GIF для аватара (до 450 КБ), баннера и фона профиля (до 650 КБ); 30 цветов, второй цвет для градиента баннера, декоры баннера ASCII и «Код».
-- ASCII-элементы (рамки-уголки, разделители, полосы прогресса, курсор у заголовков), расширенные анимации; тема и параметры анимаций работают как раньше.
-
-### Роли, теги и Owner Panel (0.15)
-- Роли `owner`, `tester`, `user` хранятся в базе (`profiles.role`) и меняются только серверными функциями; клиент роль не присылает.
-- Теги рядом с именем (профиль, списки друзей и поиска, Owner Panel; общий компонент для будущего чата): 5 оформлений (заливка, контур, пунктир, свечение, текст), необязательный цвет, до 3 на человека. Выдаёт и снимает только владелец.
-- Владелец автоматически получает все рамки (включая эксклюзивные `aurora`, `crown`, `void`) и все достижения в профиле. Остальным эксклюзив выдаётся вручную из панели.
-- Owner Panel (Настройки → Owner Panel, видна только владельцу): список пользователей, роли, теги, выдача эксклюзивных рамок, журнал действий.
-- Приватность: почта и данные аккаунта не попадают ни в одну публичную функцию, включая Owner Panel; @имя больше не строится из адреса почты.
-
-### Оформление
-- Светлая и тёмная темы, анимации можно выключить (системная настройка «уменьшить движение» тоже учитывается).
-- 12 языков интерфейса: русский, English, Español, Deutsch, Français, Italiano, Português, Polski, Türkçe, Українська, 中文, 日本語.
-- Работает на экранах от 360 px, на широких экранах появляется боковое меню.
-
-## Как считается прогресс
-
-| Что | Правило |
+| Rule | Detail |
 | --- | --- |
-| Опыт | 5 XP за задачу |
-| Лимит | до 10 задач и выполнений в день |
-| Ранги | 11 штук, пороги XP лежат в `rankThresholds` в `app.js` |
-| Навыки | каждая выполненная задача даёт очко своей ветки (по категории задачи) |
-| Серия | дни подряд, в которые выполнена хотя бы одна задача |
-| Награды | остаются, даже если вы отменили задачу или сбросили XP |
+| XP | 5 per completed task |
+| Daily limit | 10 tasks |
+| Ranks | 11 steps; thresholds live in `app.js` (`rankThresholds`) |
+| Skills | Each completion adds a point to the task’s branch |
+| Streak | Consecutive days with at least one completion |
+| Awards | Never revoked by undo or XP reset |
 
-## Запуск у себя
+## Quick start (users)
+
+1. Open **[https://levaloran.github.io/FORM/](https://levaloran.github.io/FORM/)**
+2. Choose a language
+3. Sign in with GitHub or create an email account
+4. Add a task, mark it done, watch XP and skills grow
+
+On a phone: **Add to Home Screen** (iOS) or **Install app** (Android / Chrome).
+
+## Run locally
 
 ```bash
 python -m http.server 8000
 ```
 
-Откройте `http://localhost:8000`. Service worker и `crypto.randomUUID` требуют HTTPS или `localhost`. Без них приложение работает, но офлайн-режим недоступен.
+Open `http://localhost:8000`. Service worker and `crypto.randomUUID` need HTTPS or `localhost`.
 
-Чтобы работал вход, впишите публичный ключ Supabase в `config.js` (см. [ниже](#подключение-supabase)).
+For sign-in and sync, put your public Supabase keys in `config.js` (see [Owner setup](#owner-setup-supabase)).
 
-## Публикация на GitHub Pages
+## Owner setup (Supabase)
 
-1. Загрузите папку проекта в репозиторий, ветка `main`.
-2. В репозитории: **Settings → Pages → Source: GitHub Actions**.
-3. Workflow `.github/workflows/pages.yml` публикует сайт при каждом пуше в `main`.
-4. Откройте адрес Pages на телефоне и установите приложение.
+One-time configuration by the project owner. **Never** put `service_role` or OAuth client secrets in the repo.
 
-Если вы публикуете «из ветки» (Deploy from a branch), workflow не запускается. Тогда ключ Supabase нужно вписать в `config.js` прямо в репозитории.
+1. Create a project on [supabase.com](https://supabase.com).
+2. **SQL Editor** → run `supabase/setup.sql` (safe to re-run).
+3. **Authentication → URL Configuration** → Site URL and Redirect URLs = your Pages URL (and `http://localhost:8000/` for dev).
+4. Enable **Email** (and optionally **GitHub**) under Providers.
+5. Set repository variables `SUPABASE_URL` and `SUPABASE_ANON_KEY`, or write them into `config.js`.
+6. For real users, configure custom SMTP under Authentication → Emails (built-in mail is test-only).
 
-## Подключение Supabase
+File size limits are controlled by the Supabase project (free tier ≈ 50 MB per file). The app does not add its own upload cap.
 
-Всё делает владелец проекта один раз. Ключи `service_role` и `client secret` в код и в переменные репозитория не кладутся.
-
-1. Создайте проект на [supabase.com](https://supabase.com).
-2. **SQL Editor** (после обновления до 0.15 выполните скрипт ещё раз): выполните весь `supabase/setup.sql`. Он создаёт таблицы синхронизации и резервных копий, приватный бакет `photos`, а с версии 0.14 ещё и социальную часть (профили, друзья, блокировки, уведомления, функции). Скрипт можно запускать повторно. Без части 3 приложение работает, но раздел «Друзья» покажет, что сервер не настроен. Профили для уже существующих аккаунтов создаются этим же скриптом.
-3. **Authentication → URL Configuration:** Site URL и Redirect URLs поставьте на адрес сайта, для разработки добавьте `http://localhost:8000/`.
-4. **Authentication → Providers:** включите Email, при желании GitHub. Client ID и Client Secret вставляются только здесь, а в настройках приложения GitHub указывается callback `https://<project-ref>.supabase.co/auth/v1/callback`.
-5. **Ключ в приложение:** публичный (publishable / anon) ключ положите в переменные репозитория `SUPABASE_URL` и `SUPABASE_ANON_KEY` (**Settings → Secrets and variables → Actions → Variables**) или впишите в `config.js`. Переменные имеют приоритет.
-6. **Письма.** Встроенная почта Supabase годится только для тестов: она пишет участникам вашей команды и не больше нескольких писем в час. Для настоящих пользователей подключите свой SMTP (**Authentication → Emails → SMTP Settings**, подойдут Brevo, Resend, Postmark) и подтвердите домен отправителя (SPF и DKIM), иначе письма попадут в спам. Если письма не приходят, причину покажут **Logs → Auth**.
-7. **Размер файлов.** На бесплатном тарифе Supabase принимает файлы до 50 МБ. Приложение своих ограничений на фото не ставит.
-
-Чтобы закрыть регистрацию для посторонних, отключите *Allow new users to sign up* и добавляйте людей вручную: **Authentication → Users → Add user**.
-
-## Структура проекта
+## Project layout
 
 ```
 .
-├── index.html          разметка и все экраны
-├── style.css           стили, светлая и тёмная темы
-├── app.js              состояние, задачи, ранги, навыки, награды, хранилище
-├── extras.js           календарь, графики, звук, анимации
-├── settings.js         экран настроек и сброс XP
-├── notifications.js    уведомления и напоминания
-├── social.js           FORM ID, друзья, профиль, приватность, уведомления
-├── social.css          стили социальной части
-├── ui.js               оболочка 0.16: чипы, мини-панель, ASCII
-├── ui.css              стили оболочки, анимации, компьютерная раскладка
-├── auth.js             вход и регистрация
-├── sync.js             синхронизация и слияние данных
-├── upload.js           загрузка оригиналов фото
-├── i18n.js             движок переводов
-├── lang-data.js        словари 12 языков
-├── config.js           публичная конфигурация Supabase
-├── sw.js               service worker (офлайн, версия кэша)
-├── manifest.webmanifest
-├── icon*.png, icon.svg иконки приложения
-├── supabase/
-│   └── setup.sql       таблицы, политики, бакет, резервные копии
-├── .github/workflows/
-│   └── pages.yml       публикация на GitHub Pages
-├── CHANGELOG.md        история версий
-└── README.md
+├── index.html           screens & shell
+├── style.css            themes & base UI
+├── app.js               state, tasks, ranks, skills, storage
+├── extras.js            calendar, avatars, sound, effects
+├── settings.js          settings & XP reset
+├── social.js / .css     FORM ID, friends, profiles, privacy
+├── shared-tasks.js/.css shared tasks with friends
+├── ui.js / ui.css       chips, mini bar, ASCII accents
+├── auth.js              sign-in / sign-up
+├── sync.js              cloud sync & merge
+├── upload.js            resumable photo uploads (TUS)
+├── i18n.js + lang-data.js  12 languages
+├── config.js            public Supabase config
+├── sw.js                offline cache
+├── supabase/setup.sql   tables, RLS, storage
+└── CHANGELOG.md
 ```
 
-Данные на устройстве лежат в IndexedDB (`lifeProtocolDB`) с копией в localStorage. Названия ключей остались от старого имени проекта специально, чтобы не потерять прогресс тех, кто начинал раньше.
+## Translations
 
-## Переводы
+Source language is **Russian** (dictionary keys are Russian strings). Fallback chain: selected language → English → Russian.
 
-Исходный язык русский: ключом словаря служит сама русская строка. Цепочка запасных вариантов такая: выбранный язык, затем English, затем русский.
-
-Чтобы добавить язык:
-
-1. Добавьте строку в `LANGS` в `i18n.js`.
-2. Добавьте словарь в `lang-data.js`: `window.FORM_I18N.xx = {...}`.
-
-Названия задач и имя пользователя не переводятся. Переводы сделаны без носителей языка, поэтому поправки в `lang-data.js` приветствуются.
-
-## Ограничения
-
-- Сайт статический, и экран входа сам по себе не защита: его можно обойти правкой кода у себя в браузере. Данные в облаке защищают политики RLS из `setup.sql`.
-- Если одну и ту же задачу одновременно изменить на двух устройствах, останется правка того, которое синхронизировалось последним. Выполнение задачи при этом не теряется.
-- Импорт старой копии объединяется с облаком, а не заменяет его. Чтобы откатить прогресс, используйте «Копии» в профиле.
-- Отчёты и подсказки составляются обычной логикой внутри приложения, это не нейросеть. Ключ от внешнего ИИ в `app.js` класть нельзя.
-- Социальная часть: достижения и статистика в профиле приходят из приложения (прогресс хранится на устройстве), сервер проверяет только формат. Рамки аватара, закрытые рангом, тоже ограничены на стороне приложения.
-- Фото профиля, баннер и фон хранятся в таблице `profiles` как небольшие картинки (аватар 192 px, баннер 960×320, фон 720×960) и отдаются только через функции с проверкой приватности.
-- Поиск по части имени не использует индекс: для десятков тысяч пользователей добавьте `pg_trgm`. ID имеет 6 цифр (около 900 тысяч значений): для большего числа пользователей увеличьте разрядность в `_gen_form_id`.
-- Новые тексты 0.14 переведены на English и Українська, в остальных языках пока показывается English (цепочка запасных вариантов).
-- Роль `owner` назначается только вручную в `setup.sql` (по FORM ID) или SQL-запросом с `set_config('form.admin','1',true)`; из панели можно выдавать только `tester` и `user`.
-- GIF хранятся в базе как есть (с анимацией) и ограничены по размеру; для больших анимаций понадобится Storage-бакет.
-- Лицензия пока не указана.
-
-## Как помочь
-
-Нашли ошибку или есть идея: откройте [Issue](https://github.com/LevaLoran/FORM/issues). Для ошибки напишите, что вы нажимали, что ожидали и что получилось, и укажите устройство и браузер. Скриншот сильно помогает.
-
-Если правите код, учтите три вещи:
-
-- Проект без сборки, зависимостей нет, всё лежит в корне.
-- При каждом изменении файлов, которые кэширует сервис-воркер, меняйте `CACHE` в `sw.js`, иначе у пользователей останется старая версия.
-- Новые тексты интерфейса добавляйте во все словари `lang-data.js`.
-
-## История версий
-
-Полный список в [CHANGELOG.md](CHANGELOG.md). Последние версии:
-
-| Версия | Что появилось |
+| Code | Language |
 | --- | --- |
-| 0.14 | FORM ID, друзья, профили, приватность, уведомления |
-| 0.13 | Сброс XP за неделю, месяц и год |
-| 0.12 | Отмена выполненной задачи, победный звук |
-| 0.11 | 12 языков, экран настроек |
-| 0.10 | Синхронизация между устройствами, резервные копии |
-| 0.09 | Вход по почте и паролю |
+| `ru` | Русский |
+| `en` | English |
+| `es` | Español |
+| `de` | Deutsch |
+| `fr` | Français |
+| `it` | Italiano |
+| `pt` | Português |
+| `pl` | Polski |
+| `tr` | Türkçe |
+| `uk` | Українська |
+| `zh` | 中文 |
+| `ja` | 日本語 |
+
+To add a language: extend `LANGS` in `i18n.js` and add `window.FORM_I18N.xx = { ... }` in `lang-data.js`.
+
+## Limits & notes
+
+- The site is static. Sign-in UI is not security by itself — **RLS policies** in `setup.sql` protect cloud data.
+- Simultaneous edits of the *same* task on two devices: last successful sync wins; completions are not lost.
+- Import merges with the cloud; use **Backups** in Profile to roll back.
+- GIF avatars/banners are size-capped; large animations need Storage later.
+
+## Contributing
+
+Found a bug or have an idea? Open an [Issue](https://github.com/LevaLoran/FORM/issues) with steps, expected vs actual result, device, and browser.
+
+When changing code:
+
+1. No build step and no npm dependencies — keep it that way.
+2. Bump `CACHE` in `sw.js` whenever cached assets change.
+3. Add new UI strings to **all** dictionaries in `lang-data.js`.
+
+## License
+
+License is not declared yet. Contact the maintainer before redistributing.
+
+## Docs in other languages
+
+- [Русский](README.ru.md)
+- [Українська](README.uk.md)
+- [Español](README.es.md)
+- [Deutsch](README.de.md)
+- [中文](README.zh.md)
+- [日本語](README.ja.md)
+
+Full version history: [CHANGELOG.md](CHANGELOG.md).

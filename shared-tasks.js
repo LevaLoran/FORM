@@ -340,7 +340,6 @@ document.addEventListener('click',async e=>{
     if(act==='accept_invite'){
       await rpc('respond_shared_task_invite',{p_task_id:tid,p_accept:true});
       toast(tr('Вы присоединились к совместному заданию'));
-      try{if(window.FormNotif)FormNotif.notify(tr('Совместное задание'),tr('Вы присоединились к совместному заданию'),{kind:'shared'});}catch(_){}
       await refresh(true);
       if(FS().refreshUnread)FS().refreshUnread();
     }else if(act==='decline_invite'){
@@ -384,7 +383,6 @@ document.addEventListener('submit',async e=>{
       });
       closeModal();
       toast(tr('Совместное задание создано'));
-      try{if(window.FormNotif)FormNotif.notify(tr('Совместное задание создано'),title.trim(),{kind:'shared',system:false});}catch(_){}
       await refresh(true);
     }catch(err){toast(human(err))}
   }else if(e.target.id==='stInviteMoreForm'){
