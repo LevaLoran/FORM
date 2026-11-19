@@ -1,4 +1,4 @@
-const CACHE='form-b023';
+const CACHE='form-b024';
 const ASSETS=['./','./index.html','./app.js','./style.css','./extras.js','./auth.js','./upload.js','./sync.js','./i18n.js','./lang-data.js','./settings.js','./notifications.js','./social.js','./social.css','./shared-tasks.js','./shared-tasks.css','./ui.css','./ui.js','./config.js','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png','./apple-touch-icon.png'];
 // версионированные библиотеки с CDN: кэшируем, чтобы проверка входа работала офлайн
 const CDN='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';

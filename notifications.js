@@ -48,8 +48,10 @@ function canSystem(){
 /* ---------- объяснение и запрос разрешения ---------- */
 function explainAndAsk(){
   if(perm()==='granted'){
+    const was=prefs.enabled;
     prefs.enabled=true;prefs.asked=true;savePrefs();renderSettingsPanel();
-    toast(tr('Уведомления уже разрешены'));
+    if(!was)welcomeNotify();
+    else toast(tr('Уведомления уже разрешены'));
     return;
   }
   if(perm()==='denied'){
@@ -80,8 +82,12 @@ function explainAndAsk(){
         savePrefs();
         closeModal();
         renderSettingsPanel();
-        toast(r==='granted'?tr('Уведомления включены'):tr('Разрешение не получено'));
-        if(r==='granted')scheduleChecks();
+        if(r==='granted'){
+          scheduleChecks();
+          welcomeNotify();
+        }else{
+          toast(tr('Разрешение не получено'));
+        }
       }catch(_){
         closeModal();toast(tr('Не удалось запросить разрешение'));
       }
@@ -201,6 +207,22 @@ function onTaskComplete(title,xp){
   pushInApp(tr('Задача выполнена'),(title||'')+(xp?' · +'+xp+' XP':''),'task');
 }
 
+
+function welcomeNotify(){
+  const title=tr('Уведомления включены');
+  const body=tr('Теперь FORM. сможет напоминать о задачах и событиях. Отключить можно в Настройки → Уведомления.');
+  // системное + in-app
+  try{
+    if(perm()==='granted'){
+      const n=new Notification(title,{body:body,tag:'form-welcome',icon:'./icon-192.png',badge:'./icon-192.png'});
+      n.onclick=()=>{try{window.focus();n.close()}catch(_){}};
+      setTimeout(()=>{try{n.close()}catch(_){}},14000);
+    }
+  }catch(_){}
+  pushInApp(title,body,'sys');
+  toast(title);
+}
+
 /* ---------- панель настроек ---------- */
 function renderSettingsPanel(){
   const host=$('notifSettings');if(!host)return;
@@ -211,22 +233,33 @@ function renderSettingsPanel(){
     :p==='unsupported'?tr('Не поддерживаются')
     :tr('Не включены');
 
+  const row=(title,sub,ctrl)=>'<div class="prow"><div><b>'+esc(title)+'</b>'+(sub?'<div class="tiny">'+esc(sub)+'</div>':'')+'</div>'+ctrl+'</div>';
+  const seg=(id,pref,on)=>{
+    const attrs=id?' id="'+id+'"':' data-pref="'+pref+'"';
+    return '<div class="seg full" role="radiogroup"'+attrs+' style="grid-template-columns:1fr 1fr">'+
+      '<button type="button" role="radio" data-v="on"'+(on?' class="on" aria-checked="true"':' aria-checked="false')+'>'+esc(tr('Вкл'))+'</button>'+
+      '<button type="button" role="radio" data-v="off"'+(!on?' class="on" aria-checked="true"':' aria-checked="false')+'>'+esc(tr('Выкл'))+'</button></div>';
+  };
+
+  let sysCtrl;
+  if(p==='granted'){
+    sysCtrl=seg('segNotifSys','',prefs.enabled);
+  }else if(p==='unsupported'){
+    sysCtrl='<div class="tiny muted">'+esc(tr('Не поддерживаются'))+'</div>';
+  }else if(p==='denied'){
+    sysCtrl='<div class="tiny muted">'+esc(tr('Отклонены в браузере'))+'</div>';
+  }else{
+    sysCtrl='<button type="button" class="btn small secondary" id="nfAskBtn" style="margin-top:10px">'+esc(tr('Включить'))+'</button>';
+  }
+
   host.innerHTML=
-    '<div class="srow"><div><b>'+esc(tr('Системные уведомления'))+'</b><div class="tiny">'+esc(status)+'</div></div>'+
-      (p==='granted'
-        ?'<div class="seg" id="segNotifSys" role="radiogroup"><button type="button" role="radio" data-v="on"'+(prefs.enabled?' class="on" aria-checked="true"':' aria-checked="false')+'>'+esc(tr('Вкл'))+'</button><button type="button" role="radio" data-v="off"'+(!prefs.enabled?' class="on" aria-checked="true"':' aria-checked="false')+'>'+esc(tr('Выкл'))+'</button></div>'
-        :'<button type="button" class="btn small secondary" id="nfAskBtn">'+esc(tr('Включить'))+'</button>')+
-    '</div>'+
-    '<div class="srow"><div><b>'+esc(tr('Напоминания о задачах'))+'</b><div class="tiny">'+esc(tr('Вечером, если остались незакрытые дела'))+'</div></div>'+
-      '<div class="seg" data-pref="taskReminders" role="radiogroup"><button type="button" role="radio" data-v="on"'+(prefs.taskReminders?' class="on"':'')+'>'+esc(tr('Вкл'))+'</button><button type="button" role="radio" data-v="off"'+(!prefs.taskReminders?' class="on"':'')+'>'+esc(tr('Выкл'))+'</button></div></div>'+
-    '<div class="srow"><div><b>'+esc(tr('Совместные задания'))+'</b><div class="tiny">'+esc(tr('Приглашения и завершение общих задач'))+'</div></div>'+
-      '<div class="seg" data-pref="sharedTasks" role="radiogroup"><button type="button" role="radio" data-v="on"'+(prefs.sharedTasks?' class="on"':'')+'>'+esc(tr('Вкл'))+'</button><button type="button" role="radio" data-v="off"'+(!prefs.sharedTasks?' class="on"':'')+'>'+esc(tr('Выкл'))+'</button></div></div>'+
-    '<div class="srow"><div><b>'+esc(tr('Заявки в друзья'))+'</b><div class="tiny">'+esc(tr('Новые и принятые заявки'))+'</div></div>'+
-      '<div class="seg" data-pref="friends" role="radiogroup"><button type="button" role="radio" data-v="on"'+(prefs.friends?' class="on"':'')+'>'+esc(tr('Вкл'))+'</button><button type="button" role="radio" data-v="off"'+(!prefs.friends?' class="on"':'')+'>'+esc(tr('Выкл'))+'</button></div></div>'+
-    '<div class="srow"><div><b>'+esc(tr('Итог дня'))+'</b><div class="tiny">'+esc(tr('Краткое напоминание ближе к ночи'))+'</div></div>'+
-      '<div class="seg" data-pref="dailySummary" role="radiogroup"><button type="button" role="radio" data-v="on"'+(prefs.dailySummary?' class="on"':'')+'>'+esc(tr('Вкл'))+'</button><button type="button" role="radio" data-v="off"'+(!prefs.dailySummary?' class="on"':'')+'>'+esc(tr('Выкл'))+'</button></div></div>'+
-    '<div class="srow"><div><b>'+esc(tr('Час напоминания'))+'</b><div class="tiny">'+esc(tr('Локальное время'))+'</div></div>'+
-      '<select class="field" id="nfHour" style="width:auto;min-width:90px">'+
+    row(tr('Системные уведомления'),status,sysCtrl)+
+    row(tr('Напоминания о задачах'),tr('Вечером, если остались незакрытые дела'),seg('','taskReminders',prefs.taskReminders))+
+    row(tr('Совместные задания'),tr('Приглашения и завершение общих задач'),seg('','sharedTasks',prefs.sharedTasks))+
+    row(tr('Заявки в друзья'),tr('Новые и принятые заявки'),seg('','friends',prefs.friends))+
+    row(tr('Итог дня'),tr('Краткое напоминание ближе к ночи'),seg('','dailySummary',prefs.dailySummary))+
+    '<div class="prow"><div><b>'+esc(tr('Час напоминания'))+'</b><div class="tiny">'+esc(tr('Локальное время'))+'</div></div>'+
+      '<select class="field" id="nfHour" style="width:auto;min-width:100px;margin-top:10px">'+
         Array.from({length:24},(_,h)=>'<option value="'+h+'"'+(h===prefs.remindHour?' selected':'')+'>'+String(h).padStart(2,'0')+':00</option>').join('')+
       '</select></div>';
 
@@ -234,14 +267,17 @@ function renderSettingsPanel(){
   const sys=$('segNotifSys');
   if(sys)sys.addEventListener('click',e=>{
     const b=e.target.closest('button');if(!b)return;
-    prefs.enabled=b.dataset.v==='on';
-    if(prefs.enabled&&perm()!=='granted'){explainAndAsk();return}
+    const turnOn=b.dataset.v==='on';
+    if(turnOn&&perm()!=='granted'){explainAndAsk();return}
+    const was=prefs.enabled;
+    prefs.enabled=turnOn;
     savePrefs();renderSettingsPanel();
+    if(turnOn&&!was&&perm()==='granted')welcomeNotify();
   });
-  host.querySelectorAll('.seg[data-pref]').forEach(seg=>{
-    seg.addEventListener('click',e=>{
+  host.querySelectorAll('.seg[data-pref]').forEach(segEl=>{
+    segEl.addEventListener('click',e=>{
       const b=e.target.closest('button');if(!b)return;
-      const key=seg.dataset.pref;
+      const key=segEl.dataset.pref;
       prefs[key]=b.dataset.v==='on';
       savePrefs();renderSettingsPanel();
     });
@@ -249,6 +285,7 @@ function renderSettingsPanel(){
   const hour=$('nfHour');
   if(hour)hour.onchange=()=>{prefs.remindHour=+hour.value||20;savePrefs()};
 }
+
 
 function start(){
   if(started)return;
