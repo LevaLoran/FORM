@@ -1,7 +1,7 @@
 {
-  "name": "FORM. - Shape yourself",
-  "short_name": "FORM.",
-  "id": "/",
+  "name": "FORM — Shape Yourself",
+  "short_name": "FORM",
+  "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -9,7 +9,7 @@
   "lang": "ru",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
-  "description": "Shape yourself: ежедневные задачи, опыт, ранги и навыки",
+  "description": "FORM — personal development through daily tasks, experience, ranks and skills.",
   "icons": [
     {
       "src": "icon-192.png",
@@ -35,5 +35,6 @@
       "type": "image/svg+xml",
       "purpose": "any"
     }
-  ]
+  ],
+  "prefer_related_applications": false
 }
