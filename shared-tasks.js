@@ -340,6 +340,7 @@ document.addEventListener('click',async e=>{
     if(act==='accept_invite'){
       await rpc('respond_shared_task_invite',{p_task_id:tid,p_accept:true});
       toast(tr('Вы присоединились к совместному заданию'));
+      try{if(window.FormNotif)FormNotif.notify(tr('Совместное задание'),tr('Вы присоединились к совместному заданию'),{kind:'shared'});}catch(_){}
       await refresh(true);
       if(FS().refreshUnread)FS().refreshUnread();
     }else if(act==='decline_invite'){
@@ -383,6 +384,7 @@ document.addEventListener('submit',async e=>{
       });
       closeModal();
       toast(tr('Совместное задание создано'));
+      try{if(window.FormNotif)FormNotif.notify(tr('Совместное задание создано'),title.trim(),{kind:'shared',system:false});}catch(_){}
       await refresh(true);
     }catch(err){toast(human(err))}
   }else if(e.target.id==='stInviteMoreForm'){
@@ -415,6 +417,17 @@ window.FormSharedTasks={
   renderUserSharedActivity,
   openCreateModal,
   openInviteFriendModal,
-  hasPendingInvite:tid=>T.invites.some(i=>i.task_id===tid)
+  hasPendingInvite:tid=>T.invites.some(i=>i.task_id===tid),
+  render:renderContainer
 };
+
+/* перерисовка при смене языка */
+(function(){
+  const prev=window.formLangChanged;
+  window.formLangChanged=function(c){
+    if(typeof prev==='function')prev(c);
+    try{if(started){renderContainer();const feed=$('friendsSharedFeed');if(feed)renderFriendsFeed(feed)}}catch(_){}
+  };
+})();
+
 })();

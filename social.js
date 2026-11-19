@@ -534,8 +534,8 @@ function renderPrivacy(){
   if(other)other.innerHTML=''; // одна копия на странице: без дублей id
   if(!box)return;
   if(!S.me){box.innerHTML='<div class="empty">'+esc(S.loadErr?human(S.loadErr):i18('Загружаю профиль…'))+'</div>';return}
-  const pv=S.me.privacy||{},hide=pv.hide||[];
-  let h='<div class="acc">'+PRIV.map(p=>'<div class="prow"><div><b>'+esc(i18(p[1]))+'</b><div class="tiny">'+esc(i18(p[2]))+'</div></div><div class="seg full" role="radiogroup" data-pk="'+p[0]+'" style="grid-template-columns:repeat('+p[3].length+',1fr)">'+p[3].map(o=>'<button type="button" role="radio" data-v="'+o[0]+'" class="'+(pv[p[0]]===o[0]?'on':'')+'" aria-checked="'+(pv[p[0]]===o[0])+'">'+esc(i18(o[1]))+'</button>').join('')+'</div></div>').join('')+'</div>';
+  const pv=Object.assign({requests:'everyone',online:'everyone',last_seen:'friends',profile:'everyone',find:'everyone',shared_tasks:'friends',shared_activity:'friends'},S.me.privacy||{}),hide=pv.hide||[];
+  let h='<div class="acc">'+PRIV.map(p=>{const cur=pv[p[0]];const val=(cur!=null&&p[3].some(o=>o[0]===cur))?cur:p[3][0][0];return '<div class="prow"><div><b>'+esc(i18(p[1]))+'</b><div class="tiny">'+esc(i18(p[2]))+'</div></div><div class="seg full" role="radiogroup" data-pk="'+p[0]+'" style="grid-template-columns:repeat('+p[3].length+',1fr)">'+p[3].map(o=>'<button type="button" role="radio" data-v="'+o[0]+'" class="'+(val===o[0]?'on':'')+'" aria-checked="'+(val===o[0])+'">'+esc(i18(o[1]))+'</button>').join('')+'</div></div>'}).join('')+'</div>';
   if(!inl)h+='<div class="sectiontitle"><span>'+esc(i18('Скрыть из профиля'))+'</span></div><p class="sub">'+esc(i18('Скрытые элементы не видит никто, кроме вас. Это те же переключатели, что и в редакторе профиля.'))+'</p><div class="acc">'+HIDE.map(x=>'<div class="srow"><span>'+esc(i18(x[1]))+'</span>'+swHTML(x[0],hide.includes(x[0]))+'</div>').join('')+'</div>';
   h+='<div class="sectiontitle"><span>'+esc(i18('Заблокированные'))+'</span><span>'+S.blocked.length+'</span></div><p class="sub">'+esc(i18('Заблокированные пользователи не могут отправлять вам заявки и взаимодействовать с вами, а ваш профиль для них недоступен.'))+'</p>';
   h+='<form id="blockForm" class="findform" autocomplete="off"><div class="row" style="gap:8px"><input class="field" id="blockQ" maxlength="20" placeholder="FORM#123456" autocapitalize="off" spellcheck="false" aria-label="FORM ID"><button class="btn secondary" type="submit">'+esc(i18('Заблокировать'))+'</button></div></form>';
@@ -929,4 +929,17 @@ document.addEventListener('submit',onSubmit);
 window.FormSocial={start,touch,onScreen,go,back:goBack,openUser,openEditor,openPreview,refreshUnread,
   open:id=>go(id),get me(){return S.me},get role(){return S.me?S.me.role:'user'},
   get friends(){return friendsOnly()},avHTML,dispName,tagsHTML,ago,esc,rpc,human,hex};
+
+(function(){
+  const prev=window.formLangChanged;
+  window.formLangChanged=function(c){
+    if(typeof prev==='function')prev(c);
+    try{
+      if(typeof renderPrivacy==='function')renderPrivacy();
+      if(typeof renderFriends==='function')renderFriends();
+      if(typeof drawNotifs==='function')drawNotifs();
+      if(S&&S.me&&typeof renderEditor==='function'){/* keep draft */}
+    }catch(_){}
+  };
+})();
 })();

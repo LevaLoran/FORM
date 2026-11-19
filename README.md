@@ -3,7 +3,7 @@
 <div align="center">
 
 [![Открыть приложение](https://img.shields.io/badge/открыть-levaloran.github.io%2FFORM-111111?style=flat)](https://levaloran.github.io/FORM/)
-![Версия](https://img.shields.io/badge/версия-бета%200.16-2563eb?style=flat)
+![Версия](https://img.shields.io/badge/версия-бета%200.18-2563eb?style=flat)
 ![PWA](https://img.shields.io/badge/PWA-устанавливается-5a0fc8?style=flat)
 ![Языки](https://img.shields.io/badge/языков-12-22863a?style=flat)
 [![Deploy](https://github.com/LevaLoran/FORM/actions/workflows/pages.yml/badge.svg)](https://github.com/LevaLoran/FORM/actions/workflows/pages.yml)
@@ -145,6 +145,7 @@ python -m http.server 8000
 ├── app.js              состояние, задачи, ранги, навыки, награды, хранилище
 ├── extras.js           календарь, графики, звук, анимации
 ├── settings.js         экран настроек и сброс XP
+├── notifications.js    уведомления и напоминания
 ├── social.js           FORM ID, друзья, профиль, приватность, уведомления
 ├── social.css          стили социальной части
 ├── ui.js               оболочка 0.16: чипы, мини-панель, ASCII

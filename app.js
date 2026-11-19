@@ -98,7 +98,7 @@ function normalize(raw){
  return s;
 }
 let state=load();
-const APP_VERSION='RELEASE 1.0',DB_NAME='lifeProtocolDB',DB_VER=1;
+const APP_VERSION='Бета 0.18',DB_NAME='lifeProtocolDB',DB_VER=1;
 let dbp=null,ready=false,idbOk=true;
 const getDb=()=>dbp||(dbp=new Promise((res,rej)=>{const r=indexedDB.open(DB_NAME,DB_VER);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('kv'))r.result.createObjectStore('kv')};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}));
 const idbGet=k=>getDb().then(db=>new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}));
@@ -321,9 +321,16 @@ function renderNext(r){
  $('nextRank').innerHTML=nx===null?'<strong>Максимальный ранг</strong>':`<div><div class="tiny">Следующий ранг</div><strong>${rankNames[nx]}</strong><div class="tiny">${i18('ещё {n} XP',{n:Math.max(0,r.end-state.xp)})}</div></div><div class="remb sm">${crest(nx)}</div>`;
 }
 function renderSkills(){
+ // Сводка по направлениям: ступень + уровень внутри неё
  $('skillList').innerHTML='<div class="sectiontitle"><span>Прогресс по направлениям</span></div>'+treeOrder.map(n=>{
-  const xp=state.skills[n]||0,lvl=Math.floor(xp/10)+1,p=xp%10*10;
-  return `<div class="skill" style="--c:var(--c-${n})"><div class="row"><strong><i class="cdot" style="background:var(--c)"></i>${skillRu[n]}</strong><span class="tag">${i18('ур. {n}',{n:String(lvl).padStart(2,'0')})}</span></div><div class="row tiny" style="margin-top:8px"><span>${i18('{p} очк. · {f}',{p:xp,f:feeds(n)})}</span><span>${p}%</span></div><div class="progress" style="margin-top:8px;--bar:var(--c)"><i style="width:${p}%"></i></div></div>`}).join('');
+  const xp=state.skills[n]||0;
+  let tier=0;for(let t=TIER_COUNT-1;t>=0;t--){if(xp>=tierAt[t]){tier=t;break}}
+  const into=Math.max(0,xp-tierAt[tier]);
+  const lvl=Math.min(LVL_MAX,Math.floor(into/LVL_SPAN)+1);
+  const nextAt=tierAt[Math.min(TIER_COUNT-1,tier+(lvl>=LVL_MAX?1:0))];
+  const p=lvl>=LVL_MAX&&tier===TIER_COUNT-1?100:Math.min(100,Math.round(into/(LVL_SPAN*LVL_MAX)*100));
+  const tierLab=tierNames[n][tier];
+  return `<div class="skill" style="--c:var(--c-${n})"><div class="row"><strong><i class="cdot" style="background:var(--c)"></i>${skillRu[n]}</strong><span class="tag">${i18('ступень {n}',{n:tier+1})} · ${i18('ур. {n}',{n:String(lvl).padStart(2,'0')})}</span></div><div class="row tiny" style="margin-top:8px"><span>${i18('{p} очк. · {f}',{p:xp,f:feeds(n)})} · ${tierLab}</span><span>${p}%</span></div><div class="progress" style="margin-top:8px;--bar:var(--c)"><i style="width:${p}%"></i></div></div>`}).join('');
 }
 // Возвращает названия медалей, разблокированных прямо сейчас
 function checkMedals(){
@@ -420,93 +427,122 @@ function importData(e){
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
 
-/* ---------- Дерево навыков ---------- */
-// Три направления по два навыка; колонки подобраны так, что все связи между ветками идут только между соседними колонками.
+/* ---------- Дерево навыков (v0.18: 4 ступени, глубокая прокачка) ---------- */
+// Три направления по два навыка. 4 ступени в каждой ветке; связи только с соседними колонками.
 const treeGroups=[['Люди и творчество',['SOCIAL','CREATIVITY']],['Разум',['INTELLIGENCE','TECHNICAL']],['Воля и тело',['DISCIPLINE','FITNESS']]];
 const treeOrder=treeGroups.flatMap(g=>g[1]);
 const treeLab={INTELLIGENCE:'Интеллект',DISCIPLINE:'Дисциплина',FITNESS:'Физика',CREATIVITY:'Творчество',TECHNICAL:'Техника',SOCIAL:'Социум'};
-const tierNames={INTELLIGENCE:['Ученик','Аналитик','Эрудит'],DISCIPLINE:['Режим','Фокус','Воля'],CREATIVITY:['Искра','Мастер','Визионер'],FITNESS:['Ходок','Атлет','Титан'],TECHNICAL:['Самоделкин','Инженер','Архитектор'],SOCIAL:['Связной','Оратор','Лидер']};
-const tierAt=[0,10,30],cross={INTELLIGENCE:'TECHNICAL',DISCIPLINE:'FITNESS',CREATIVITY:'INTELLIGENCE',FITNESS:'DISCIPLINE',TECHNICAL:'DISCIPLINE',SOCIAL:'CREATIVITY'};
-const tierDesc=['Базовая ступень направления, открыта сразу.','Продвинутая ступень: нужна база ветки и 10 очков направления.','Вершина ветки: нужны 30 очков и навык из соседнего направления.'];
+// 4 ступени: база → практика → мастерство → вершина. Пороги выше, путь длиннее.
+const tierNames={
+  INTELLIGENCE:['Ученик','Аналитик','Эрудит','Мудрец'],
+  DISCIPLINE:['Режим','Фокус','Воля','Стойкость'],
+  CREATIVITY:['Искра','Ремесло','Мастер','Визионер'],
+  FITNESS:['Ходок','Атлет','Титан','Легенда тела'],
+  TECHNICAL:['Самоделкин','Инженер','Архитектор','Создатель'],
+  SOCIAL:['Связной','Оратор','Лидер','Вдохновитель']
+};
+const TIER_COUNT=4;
+const tierAt=[0,15,35,65]; // очки направления для открытия ступени
+const LVL_SPAN=12;         // очков на один уровень внутри ступени
+const LVL_MAX=6;           // уровней на ступень (1…6)
+const cross={INTELLIGENCE:'TECHNICAL',DISCIPLINE:'FITNESS',CREATIVITY:'INTELLIGENCE',FITNESS:'DISCIPLINE',TECHNICAL:'DISCIPLINE',SOCIAL:'CREATIVITY'};
+const tierDesc=[
+  'Базовая ступень направления, открыта сразу. Набирайте очки задачами этой ветки.',
+  'Практика: нужна предыдущая ступень этой ветки и 15 очков направления.',
+  'Мастерство: нужна предыдущая ступень и ступень I соседнего направления.',
+  'Вершина ветки: нужна предыдущая ступень и ступень II соседнего направления. Долгий путь.'
+];
 const feeds=c=>Object.keys(skillMap).filter(k=>skillMap[k]===c).map(k=>i18(categories[k])).join(', ');
-const PADX=14,COLW=150,NW=128,NH=92,ROWH=138,TOP=70,TW=PADX*2+5*COLW+NW,TH=TOP+2*ROWH+NH+16;
+const PADX=14,COLW=150,NW=128,NH=92,ROWH=138,TOP=70;
+const TW=PADX*2+5*COLW+NW,TH=TOP+(TIER_COUNT-1)*ROWH+NH+16;
 const TV={k:1,x:0,init:false,sel:null},pulse=new Set();
 const TI={learned:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12.5 4.5 4.5L19 7"/></svg>',lock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>'};
+
 function nodeInfo(c,t){
- const p=state.skills[c]||0,pre=[];
- if(t>0)pre.push([c,t-1]);if(t===2)pre.push([cross[c],1]);
- const preOk=pre.every(([cc,tt])=>nodeInfo(cc,tt).lvl>=1),unlocked=p>=tierAt[t]&&preOk;
- const lvl=unlocked?Math.min(5,Math.floor((p-tierAt[t])/8)+1):0;
- return {p,pre,unlocked,lvl,avail:preOk&&!unlocked,pct:lvl>=5?100:unlocked?(p-tierAt[t])%8/8*100:preOk?Math.min(99,p/tierAt[t]*100):0};
+  const p=state.skills[c]||0,pre=[];
+  if(t>0)pre.push([c,t-1]);
+  // Ступень 2+ требует соседнюю ветку на ступень t-2 (минимум 0), ступень 3 — соседнюю на 1
+  if(t>=2)pre.push([cross[c],Math.max(0,t-2)]);
+  if(t>=3)pre.push([cross[c],1]);
+  // Уникализируем предусловия
+  const seen=new Set(),uniq=[];
+  pre.forEach(([cc,tt])=>{const k=cc+tt;if(!seen.has(k)){seen.add(k);uniq.push([cc,tt])}});
+  const preOk=uniq.every(([cc,tt])=>nodeInfo(cc,tt).lvl>=1);
+  const unlocked=p>=tierAt[t]&&preOk;
+  const lvl=unlocked?Math.min(LVL_MAX,Math.floor((p-tierAt[t])/LVL_SPAN)+1):0;
+  const pct=lvl>=LVL_MAX?100:unlocked?((p-tierAt[t])%LVL_SPAN)/LVL_SPAN*100:preOk?Math.min(99,p/Math.max(1,tierAt[t])*100):0;
+  return {p,pre:uniq,unlocked,lvl,avail:preOk&&!unlocked,pct};
 }
+
 function renderTree(){
- const el=$('skillTree');if(!el)return;
- const cx=i=>PADX+i*COLW+NW/2,ty=t=>TOP+t*ROWH,idx=Object.fromEntries(treeOrder.map((c,i)=>[c,i])),info={},now=[];
- treeOrder.forEach(c=>[0,1,2].forEach(t=>{const n=info[c+t]=nodeInfo(c,t);if(n.unlocked)now.push(c+t)}));
- const fresh=state.treeSeen?now.filter(x=>!state.treeSeen.includes(x)):[];
- fresh.forEach(f=>pulse.add(f));
- window.freshSkills=fresh.map(f=>tierNames[f.slice(0,-1)][+f.slice(-1)]);
- if(!state.treeSeen||fresh.length){state.treeSeen=now;save()}
- let ln='',nd='',hd='';
- treeGroups.forEach((g,gi)=>{hd+=`<div class="tg" style="left:${PADX+gi*2*COLW}px;width:${COLW+NW}px">${g[0]}</div>`});
- treeOrder.forEach((c,i)=>{
-  hd+=`<div class="tb" style="left:${PADX+i*COLW}px;--c:var(--c-${c})">${treeLab[c]}</div>`;
-  for(let t=0;t<3;t++){
-   const n=info[c+t],st=n.unlocked?'learned':n.avail?'avail':'lock',key=c+t;
-   n.pre.forEach(([cc,tt])=>{
-    const x1=cx(idx[cc]),y1=ty(tt)+NH,x2=cx(i),y2=ty(t),m=(y1+y2)/2,hl=TV.sel&&(TV.sel===key||TV.sel===cc+tt);
-    ln+=`<path class="tl${n.unlocked?' on':''}${cc!==c?' x':''}${hl?' hl':''}" style="--c:var(--c-${cc})" d="M${x1} ${y1}C${x1} ${m} ${x2} ${m} ${x2} ${y2}"/>`;
-   });
-   const sub=n.unlocked?i18('Уровень {n} из 5',{n:n.lvl}):n.avail?i18('{p} / {a} очков',{p:n.p,a:tierAt[t]}):i18('Закрыто');
-   nd+=`<button class="tnode st-${st}${pulse.has(key)?' new':''}${TV.sel===key?' sel':''}" style="left:${PADX+i*COLW}px;top:${ty(t)}px;--c:var(--c-${c})" data-c="${c}" data-t="${t}" aria-label="${i18(tierNames[c][t])}, ${i18(treeLab[c])}: ${sub}"><b>${tierNames[c][t]}</b><span class="ti">${st==='learned'?TI.learned:st==='lock'?TI.lock:''}</span><small>${sub}</small><div class="progress"><i style="width:${n.pct}%"></i></div></button>`;
-  }
- });
- el.innerHTML=`<div class="tree-tools"><div class="tchips">${treeOrder.map(c=>`<button class="chip" style="--c:var(--c-${c})" onclick="treeFocus('${c}')"><i></i>${treeLab[c]}</button>`).join('')}</div><span class="zoomb"><button onclick="treeZoom(.85)" aria-label="Уменьшить">−</button><button onclick="treeZoom(1.18)" aria-label="Увеличить">+</button><button class="t" onclick="treeFit()">Сброс вида</button></span></div><div id="treeVp"><div id="treeCv" style="width:${TW}px;height:${TH}px"><svg width="${TW}" height="${TH}" viewBox="0 0 ${TW} ${TH}" aria-hidden="true">${ln}</svg>${hd}${nd}</div></div><div class="tleg"><span><i class="sw l"></i>изучено</span><span><i class="sw a"></i>доступно</span><span><i class="sw k"></i>закрыто</span><span>сплошная линия — ступени ветки, тонкая — связь с соседним направлением</span></div>`;
- treeApply();
+  const el=$('skillTree');if(!el)return;
+  const cx=i=>PADX+i*COLW+NW/2,ty=t=>TOP+t*ROWH,idx=Object.fromEntries(treeOrder.map((c,i)=>[c,i])),info={},now=[];
+  treeOrder.forEach(c=>{for(let t=0;t<TIER_COUNT;t++){const n=info[c+t]=nodeInfo(c,t);if(n.unlocked)now.push(c+t)}});
+  const fresh=state.treeSeen?now.filter(x=>!state.treeSeen.includes(x)):[];
+  fresh.forEach(f=>pulse.add(f));
+  window.freshSkills=fresh.map(f=>tierNames[f.slice(0,-1)][+f.slice(-1)]);
+  if(!state.treeSeen||fresh.length){state.treeSeen=now;save()}
+  let ln='',nd='',hd='';
+  treeGroups.forEach((g,gi)=>{hd+=`<div class="tg" style="left:${PADX+gi*2*COLW}px;width:${COLW+NW}px">${g[0]}</div>`});
+  treeOrder.forEach((c,i)=>{
+    hd+=`<div class="tb" style="left:${PADX+i*COLW}px;--c:var(--c-${c})">${treeLab[c]}</div>`;
+    for(let t=0;t<TIER_COUNT;t++){
+      const n=info[c+t],st=n.unlocked?'learned':n.avail?'avail':'lock',key=c+t;
+      n.pre.forEach(([cc,tt])=>{
+        const x1=cx(idx[cc]),y1=ty(tt)+NH,x2=cx(i),y2=ty(t),m=(y1+y2)/2,hl=TV.sel&&(TV.sel===key||TV.sel===cc+tt);
+        ln+=`<path class="tl${n.unlocked?' on':''}${cc!==c?' x':''}${hl?' hl':''}" style="--c:var(--c-${cc})" d="M${x1} ${y1}C${x1} ${m} ${x2} ${m} ${x2} ${y2}"/>`;
+      });
+      const sub=n.unlocked?i18('Уровень {n} из {m}',{n:n.lvl,m:LVL_MAX}):n.avail?i18('{p} / {a} очков',{p:n.p,a:tierAt[t]}):i18('Закрыто');
+      nd+=`<button class="tnode st-${st}${pulse.has(key)?' new':''}${TV.sel===key?' sel':''}" style="left:${PADX+i*COLW}px;top:${ty(t)}px;--c:var(--c-${c})" data-c="${c}" data-t="${t}" aria-label="${i18(tierNames[c][t])}, ${i18(treeLab[c])}: ${sub}"><b>${tierNames[c][t]}</b><span class="ti">${st==='learned'?TI.learned:st==='lock'?TI.lock:''}</span><small>${sub}</small><div class="progress"><i style="width:${n.pct}%"></i></div></button>`;
+    }
+  });
+  el.innerHTML=`<div class="tree-tools"><div class="tchips">${treeOrder.map(c=>`<button class="chip" style="--c:var(--c-${c})" onclick="treeFocus('${c}')"><i></i>${treeLab[c]}</button>`).join('')}</div><span class="zoomb"><button onclick="treeZoom(.85)" aria-label="Уменьшить">−</button><button onclick="treeZoom(1.18)" aria-label="Увеличить">+</button><button class="t" onclick="treeFit()">Сброс вида</button></span></div><div id="treeVp"><div id="treeCv" style="width:${TW}px;height:${TH}px"><svg width="${TW}" height="${TH}" viewBox="0 0 ${TW} ${TH}" aria-hidden="true">${ln}</svg>${hd}${nd}</div></div><div class="tleg"><span><i class="sw l"></i>изучено</span><span><i class="sw a"></i>доступно</span><span><i class="sw k"></i>закрыто</span><span>сплошная линия — ступени ветки, тонкая — связь с соседним направлением · 4 ступени × 6 уровней</span></div>`;
+  treeApply();
 }
 function treeApply(){
- const vp=$('treeVp'),cv=$('treeCv');if(!vp||!cv)return;
- const vw=vp.clientWidth;if(!vw)return;
- if(!TV.init){
-  TV.init=true;TV.k=Math.max(Math.min(vw/TW,1),.8);
-  const best=treeOrder.slice().sort((a,b)=>(state.skills[b]||0)-(state.skills[a]||0))[0];
-  TV.x=vw/2-(PADX+treeOrder.indexOf(best)*COLW+NW/2)*TV.k;
- }
- TV.k=Math.min(1.5,Math.max(.5,TV.k));
- const cw=TW*TV.k;TV.x=cw<=vw?(vw-cw)/2:Math.min(0,Math.max(vw-cw,TV.x));
- vp.style.height=Math.ceil(TH*TV.k)+'px';cv.style.transform=`translate(${TV.x}px,0) scale(${TV.k})`;
+  const vp=$('treeVp'),cv=$('treeCv');if(!vp||!cv)return;
+  const vw=vp.clientWidth;if(!vw)return;
+  if(!TV.init){
+    TV.init=true;TV.k=Math.max(Math.min(vw/TW,1),.7);
+    const best=treeOrder.slice().sort((a,b)=>(state.skills[b]||0)-(state.skills[a]||0))[0];
+    TV.x=vw/2-(PADX+treeOrder.indexOf(best)*COLW+NW/2)*TV.k;
+  }
+  TV.k=Math.min(1.5,Math.max(.45,TV.k));
+  const cw=TW*TV.k;TV.x=cw<=vw?(vw-cw)/2:Math.min(0,Math.max(vw-cw,TV.x));
+  vp.style.height=Math.ceil(TH*TV.k)+'px';cv.style.transform=`translate(${TV.x}px,0) scale(${TV.k})`;
 }
-function treeZoom(f){const vp=$('treeVp');if(!vp||!vp.clientWidth)return;const vw=vp.clientWidth,mid=(vw/2-TV.x)/TV.k,k=Math.min(1.5,Math.max(.5,TV.k*f));TV.x=vw/2-mid*k;TV.k=k;treeApply()}
+function treeZoom(f){const vp=$('treeVp');if(!vp||!vp.clientWidth)return;const vw=vp.clientWidth,mid=(vw/2-TV.x)/TV.k,k=Math.min(1.5,Math.max(.45,TV.k*f));TV.x=vw/2-mid*k;TV.k=k;treeApply()}
 function treeFit(){TV.init=false;treeApply()}
 function treeFocus(c){const vp=$('treeVp');if(!vp||!vp.clientWidth)return;TV.x=vp.clientWidth/2-(PADX+treeOrder.indexOf(c)*COLW+NW/2)*TV.k;treeApply()}
 (function(){
- let d=null;
- document.addEventListener('pointerdown',e=>{const vp=e.target.closest&&e.target.closest('#treeVp');if(vp&&e.button!==2)d={x:e.clientX,x0:TV.x,m:false,id:e.pointerId}});
- document.addEventListener('pointermove',e=>{
-  if(!d)return;const dx=e.clientX-d.x;
-  if(!d.m&&Math.abs(dx)>6){d.m=true;$('treeCv').classList.add('drag');try{$('treeVp').setPointerCapture(d.id)}catch(_){}}
-  if(d.m){TV.x=d.x0+dx;treeApply()}
- });
- const end=()=>{if(d&&d.m){window.__td=Date.now();const cv=$('treeCv');if(cv)cv.classList.remove('drag')}d=null};
- document.addEventListener('pointerup',end);document.addEventListener('pointercancel',end);
- document.addEventListener('wheel',e=>{if(e.ctrlKey&&e.target.closest&&e.target.closest('#treeVp')){e.preventDefault();treeZoom(e.deltaY<0?1.1:.9)}},{passive:false});
- document.addEventListener('focusin',e=>{
-  const n=e.target.closest&&e.target.closest('.tnode'),vp=$('treeVp');if(!n||!vp)return;
-  vp.scrollLeft=0;vp.scrollTop=0;
-  const l=TV.x+n.offsetLeft*TV.k;if(l<0||l+NW*TV.k>vp.clientWidth)treeFocus(n.dataset.c);
- });
- window.addEventListener('resize',()=>treeApply());
- document.addEventListener('click',e=>{const g=e.target.closest&&e.target.closest('.tnode');if(g&&Date.now()-(window.__td||0)>250)openNode(g.dataset.c,+g.dataset.t)});
+  let d=null;
+  document.addEventListener('pointerdown',e=>{const vp=e.target.closest&&e.target.closest('#treeVp');if(vp&&e.button!==2)d={x:e.clientX,x0:TV.x,m:false,id:e.pointerId}});
+  document.addEventListener('pointermove',e=>{
+    if(!d)return;const dx=e.clientX-d.x;
+    if(!d.m&&Math.abs(dx)>6){d.m=true;$('treeCv').classList.add('drag');try{$('treeVp').setPointerCapture(d.id)}catch(_){}}
+    if(d.m){TV.x=d.x0+dx;treeApply()}
+  });
+  const end=()=>{if(d&&d.m){window.__td=Date.now();const cv=$('treeCv');if(cv)cv.classList.remove('drag')}d=null};
+  document.addEventListener('pointerup',end);document.addEventListener('pointercancel',end);
+  document.addEventListener('wheel',e=>{if(e.ctrlKey&&e.target.closest&&e.target.closest('#treeVp')){e.preventDefault();treeZoom(e.deltaY<0?1.1:.9)}},{passive:false});
+  document.addEventListener('focusin',e=>{
+    const n=e.target.closest&&e.target.closest('.tnode'),vp=$('treeVp');if(!n||!vp)return;
+    vp.scrollLeft=0;vp.scrollTop=0;
+    const l=TV.x+n.offsetLeft*TV.k;if(l<0||l+NW*TV.k>vp.clientWidth)treeFocus(n.dataset.c);
+  });
+  window.addEventListener('resize',()=>treeApply());
+  document.addEventListener('click',e=>{const g=e.target.closest&&e.target.closest('.tnode');if(g&&Date.now()-(window.__td||0)>250)openNode(g.dataset.c,+g.dataset.t)});
 })();
 function openNode(c,t){
- const n=nodeInfo(c,t),lab=treeLab[c],grp=treeGroups.find(g=>g[1].includes(c))[0];
- TV.sel=c+t;renderTree();
- const conds=[[n.p>=tierAt[t],t===0?'Особых условий нет':i18('{a} очков направления «{b}» (сейчас {c})',{a:tierAt[t],b:lab,c:n.p})]].concat(n.pre.map(([cc,tt])=>[nodeInfo(cc,tt).lvl>=1,i18('Изучен навык «{a}» ({b})',{a:tierNames[cc][tt],b:treeLab[cc]})]));
- const status=n.unlocked?'Изучено':n.avail?'Доступно':'Закрыто';
- const prog=n.unlocked?(n.lvl<5?i18('До уровня {a}: ещё {b} очк.',{a:n.lvl+1,b:tierAt[t]+n.lvl*8-n.p}):'Максимальный уровень'):n.avail?i18('Набрано {a} из {b} очков',{a:n.p,b:tierAt[t]}):'Сначала изучите требуемые навыки';
- $('modal').innerHTML=`<div class="tiny">${i18('{g} · {l} · ступень {n} из 3',{g:grp,l:lab,n:t+1})}</div><h3 style="margin-top:6px">${tierNames[c][t]}</h3><p class="sub">${tierDesc[t]}</p><p class="sub">${i18('Очки дают задачи: {c}.',{c:feeds(c)})}</p><div class="row"><strong>${n.unlocked?i18('Уровень {n} из 5',{n:n.lvl}):'Не изучено'}</strong><span class="tag">${status}</span></div><div class="progress" style="--bar:var(--c-${c})"><i style="width:${n.pct}%"></i></div><div class="tiny" style="margin-top:6px">${prog}</div><label>Условия открытия</label>${conds.map(([ok,x])=>`<div class="cond${ok?' met':''}" style="--c:var(--c-${c})"><span>${ok?'✓':'○'}</span>${x}</div>`).join('')}<label>Стоимость</label><div class="sub" style="margin:0">${t===0?'Бесплатно: открыто с самого начала.':i18('Порог {a} очков направления. Очки не тратятся, а копятся от выполненных задач.',{a:tierAt[t]})}</div><div class="row" style="margin-top:16px"><button class="btn ghost" onclick="closeModal()">Закрыть</button></div>`;
- showModal();
+  const n=nodeInfo(c,t),lab=treeLab[c],grp=treeGroups.find(g=>g[1].includes(c))[0];
+  TV.sel=c+t;renderTree();
+  const conds=[[n.p>=tierAt[t],t===0?i18('Особых условий нет'):i18('{a} очков направления «{b}» (сейчас {c})',{a:tierAt[t],b:lab,c:n.p})]].concat(n.pre.map(([cc,tt])=>[nodeInfo(cc,tt).lvl>=1,i18('Изучен навык «{a}» ({b})',{a:tierNames[cc][tt],b:treeLab[cc]})]));
+  const status=n.unlocked?i18('Изучено'):n.avail?i18('Доступно'):i18('Закрыто');
+  const prog=n.unlocked?(n.lvl<LVL_MAX?i18('До уровня {a}: ещё {b} очк.',{a:n.lvl+1,b:tierAt[t]+n.lvl*LVL_SPAN-n.p}):i18('Максимальный уровень')):n.avail?i18('Набрано {a} из {b} очков',{a:n.p,b:tierAt[t]}):i18('Сначала изучите требуемые навыки');
+  $('modal').innerHTML=`<div class="tiny">${i18('{g} · {l} · ступень {n} из {m}',{g:grp,l:lab,n:t+1,m:TIER_COUNT})}</div><h3 style="margin-top:6px">${tierNames[c][t]}</h3><p class="sub">${tierDesc[t]}</p><p class="sub">${i18('Очки дают задачи: {c}.',{c:feeds(c)})}</p><div class="row"><strong>${n.unlocked?i18('Уровень {n} из {m}',{n:n.lvl,m:LVL_MAX}):i18('Не изучено')}</strong><span class="tag">${status}</span></div><div class="progress" style="--bar:var(--c-${c})"><i style="width:${n.pct}%"></i></div><div class="tiny" style="margin-top:6px">${prog}</div><label>${i18('Условия открытия')}</label>${conds.map(([ok,x])=>`<div class="cond${ok?' met':''}" style="--c:var(--c-${c})"><span>${ok?'✓':'○'}</span>${x}</div>`).join('')}<label>${i18('Стоимость')}</label><div class="sub" style="margin:0">${t===0?i18('Бесплатно: открыто с самого начала.'):i18('Порог {a} очков направления. Очки не тратятся, а копятся от выполненных задач.',{a:tierAt[t]})}</div><div class="row" style="margin-top:16px"><button class="btn ghost" onclick="closeModal()">${i18('Закрыть')}</button></div>`;
+  showModal();
 }
+
 /* ---------- Contribution graph ---------- */
 let updating=false;
 function showUpdate(w){
