@@ -413,23 +413,39 @@ async function cancelTask(taskId){
 }
 
 async function openTask(taskId){
+  const wanted=String(taskId||'');
+  if(!wanted)return;
+  // Сначала открываем главный экран, затем обновляем данные приглашений.
   if(typeof window.showScreen==='function')window.showScreen('dashboard');
   await refresh(true);
-  // Дождаться отображения раздела после перехода на главную
+
+  // Экран и его анимация могут ещё не завершить отображение после перехода
+  // из уведомлений. Повторяем поиск несколько раз, чтобы не оставить
+  // пользователя просто на главной странице.
+  const locate=()=>{
+    const invite=[...document.querySelectorAll('[data-st-invite-id]')]
+      .find(el=>String(el.dataset.stInviteId)===wanted);
+    const card=[...document.querySelectorAll('[data-st-task-id]')]
+      .find(el=>String(el.dataset.stTaskId)===wanted);
+    return invite||card||document.getElementById('sharedTasksSection');
+  };
+  const focusTarget=()=>{
+    const el=locate();
+    if(!el)return false;
+    el.scrollIntoView({behavior:'smooth',block:'center',inline:'nearest'});
+    const oldOutline=el.style.outline;
+    const oldOffset=el.style.outlineOffset;
+    el.style.outline='2px solid var(--accent, currentColor)';
+    el.style.outlineOffset='4px';
+    setTimeout(()=>{
+      el.style.outline=oldOutline;
+      el.style.outlineOffset=oldOffset;
+    },2600);
+    return true;
+  };
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    const wanted=String(taskId);
-    const invite=[...document.querySelectorAll('[data-st-invite-id]')].find(el=>el.dataset.stInviteId===wanted);
-    const card=[...document.querySelectorAll('[data-st-task-id]')].find(el=>el.dataset.stTaskId===wanted);
-    const target=invite||card;
-    const fallback=document.getElementById('sharedTasksSection');
-    const el=target||fallback;
-    if(el){
-      el.scrollIntoView({behavior:'smooth',block:'center'});
-      const old=el.style.outline;
-      el.style.outline='2px solid var(--accent, currentColor)';
-      el.style.outlineOffset='4px';
-      setTimeout(()=>{el.style.outline=old;el.style.outlineOffset=''},2200);
-    }
+    if(focusTarget())return;
+    setTimeout(()=>{if(!focusTarget())refresh(true).then(()=>setTimeout(focusTarget,120));},350);
   }));
 }
 
