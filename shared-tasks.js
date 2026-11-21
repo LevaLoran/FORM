@@ -1,8 +1,10 @@
-/* FORM. v0.18 — совместные задания с друзьями:
+/* FORM. v0.19 — совместные задания с друзьями:
    - Создание общих заданий и приглашение друзей
-   - Отображение участников и общего прогресса
-   - Синхронизация через Supabase RPC + Realtime
-   - Награда: 10 XP + 10% бонус, делится поровну между участниками (идемпотентно) */
+   - Каждый участник подтверждает выполнение кнопкой «Выполнить»
+   - Задание завершается, когда все accepted подтвердили
+   - Отмена задания с подтверждением
+   - XP: (база × 1.1) делится поровну, округление до ближайшего целого; атомарно на стороне Supabase
+   - Синхронизация через Supabase RPC + Realtime */
 (function(){
 'use strict';
 const $=id=>document.getElementById(id);
@@ -31,38 +33,67 @@ async function rpc(fn,args){
 
 function human(e){
   if(FS().human)return FS().human(e);
+  const m=(e&&(e.message||e.code||e.hint))||'';
+  if(/task_cancelled/i.test(m))return tr('Задание уже отменено');
+  if(/task_already_completed/i.test(m))return tr('Задание уже выполнено');
+  if(/task_not_active/i.test(m))return tr('Задание больше не активно');
+  if(/forbidden|not_member/i.test(m))return tr('Нет доступа к этому заданию');
   return tr('Не удалось выполнить действие. Попробуйте ещё раз.');
 }
 
-/* ---------- начисление XP за совместное выполнение (идемпотентно) ---------- */
-// Фиксированная награда: 10 XP + 10% = 11, делится поровну между принявшими участниками.
+/* ---------- награда: база × 1.1, деление поровну, округление до ближайшего ---------- */
 const SHARED_BASE_XP=10;
 const SHARED_BONUS_PCT=10;
 
-function sharedRewardPerPerson(task){
-  const active=(task.members||[]).filter(m=>m.status==='accepted');
-  const n=Math.max(1,active.length);
-  const pool=Math.round(SHARED_BASE_XP*(1+SHARED_BONUS_PCT/100)); // 11
-  return Math.max(1,Math.floor(pool/n));
+function acceptedMembers(task){
+  return (task.members||[]).filter(m=>m.status==='accepted');
 }
 
+function sharedPool(task){
+  const base=Number.isFinite(+task.xp)?+task.xp:SHARED_BASE_XP;
+  return Math.round(base*(1+SHARED_BONUS_PCT/100));
+}
+
+function sharedRewardPerPerson(task){
+  const active=acceptedMembers(task);
+  const n=Math.max(1,active.length);
+  const pool=sharedPool(task);
+  return Math.max(0,Math.round(pool/n));
+}
+
+function doneCounts(task){
+  const active=acceptedMembers(task);
+  const done=active.filter(m=>m.done||(+m.progress||0)>=100).length;
+  return {done,total:active.length};
+}
+
+/* Идемпотентное начисление XP на клиенте по факту серверного xp_awarded / completed */
 function grantSharedReward(task){
   if(!task||!task.id||typeof state==='undefined')return;
-  // Ключ должен переживать cleanId() в app.js. Также учитываем старые варианты.
+  if(task.status==='cancelled')return;
+  if(task.status!=='completed')return;
+  // ключи переживают cleanId() в app.js
   const key='shared_'+task.id;
   const oldKeyColon='shared:'+task.id;
   const oldKeyClean='shared'+String(task.id).replace(/[^\w-]/g,'');
   if(state.completed.some(c=>c.id===key||c.id===oldKeyColon||c.id===oldKeyClean))return;
-  const totalXp=sharedRewardPerPerson(task);
+
+  // начисляем только если сервер зафиксировал долю (или клиент — accepted-участник)
+  const myXp=Number.isFinite(+task.my_xp_awarded)&&+task.my_xp_awarded>0
+    ? +task.my_xp_awarded
+    : sharedRewardPerPerson(task);
+  if(myXp<=0)return;
+  if(task.my_status&&task.my_status!=='accepted')return;
+
   const cat=task.category||'SOCIAL';
   const today=typeof fmt==='function'?fmt(new Date()):new Date().toISOString().slice(0,10);
 
-  state.xp=(state.xp||0)+totalXp;
+  state.xp=(state.xp||0)+myXp;
   state.completed.push({
     id:key,
     title:task.title,
     category:cat,
-    xp:totalXp,
+    xp:myXp,
     date:today,
     shared:true
   });
@@ -77,12 +108,12 @@ function grantSharedReward(task){
   if(typeof save==='function')save();
   if(typeof render==='function')render();
   if(typeof fxSound==='function')fxSound('win');
-  toast(tr('Совместное задание выполнено! +{xp} XP',{xp:totalXp}));
+  toast(tr('Совместное задание выполнено! +{xp} XP',{xp:myXp}));
 }
 
 function checkCompletedRewards(){
   (T.tasks||[]).forEach(t=>{
-    if(t.status==='completed'&&t.my_status==='accepted'){
+    if(t.status==='completed'&&(t.my_status==='accepted'||!t.my_status)){
       grantSharedReward(t);
     }
   });
@@ -136,53 +167,66 @@ function ensureContainer(){
 }
 
 function calcOverallProgress(task){
-  const active=(task.members||[]).filter(m=>m.status==='accepted');
-  if(!active.length)return 0;
-  const sum=active.reduce((s,m)=>s+Math.max(0,Math.min(100,+m.progress||0)),0);
-  return Math.round(sum/active.length);
+  const {done,total}=doneCounts(task);
+  if(!total)return 0;
+  return Math.round(done/total*100);
 }
 
 function renderTaskCard(t){
   const members=t.members||[];
-  const active=members.filter(m=>m.status==='accepted');
+  const active=acceptedMembers(t);
   const invited=members.filter(m=>m.status==='invited');
+  const {done:doneN,total:totalN}=doneCounts(t);
   const pct=calcOverallProgress(t);
   const me=active.find(m=>m.is_me)||active.find(m=>m.user_id===uid);
-  const myProg=me?Math.max(0,Math.min(100,+me.progress||0)):0;
-  const isDone=t.status==='completed'||pct>=100;
-  const perXp=sharedRewardPerPerson(t);
+  const myDone=!!(me&&(me.done||(+me.progress||0)>=100||t.my_done));
+  const isCompleted=t.status==='completed';
+  const isCancelled=t.status==='cancelled';
+  const isDone=isCompleted||isCancelled;
+  const perXp=isCancelled?0:sharedRewardPerPerson(t);
 
   const memHtml=members.map(m=>{
-    const p=Math.max(0,Math.min(100,+m.progress||0));
     let pill='';
     if(m.status==='invited')pill='<span class="st-pill pend">'+esc(tr('Ждёт'))+'</span>';
-    else if(p>=100||m.done)pill='<span class="st-pill done">✓</span>';
-    else if(p>0)pill='<span class="st-pill prog">'+p+'%</span>';
-    else pill='<span class="st-pill pend">—</span>';
+    else if(m.done||(+m.progress||0)>=100)pill='<span class="st-pill done">✓</span>';
+    else if(isCancelled)pill='<span class="st-pill pend">—</span>';
+    else pill='<span class="st-pill pend">'+esc(tr('Не выполнено'))+'</span>';
     const av=FS().avHTML?FS().avHTML(m,26,{noDot:true}):'';
     const nm=FS().dispName?FS().dispName(m):(m.display_name||m.username||'?');
     return '<div class="st-mem"><div class="st-mem-info">'+av+'<span class="st-mem-name" data-nt>'+esc(nm)+(m.is_me?' · '+esc(tr('Вы')):'')+'</span></div><div class="st-mem-stat">'+pill+'</div></div>';
   }).join('');
 
-  let controls='';
-  if(!isDone&&me){
-    controls='<div class="st-ctrl"><input type="range" class="st-range" min="0" max="100" step="5" value="'+myProg+'" data-st-range="'+esc(t.id)+'" aria-label="'+esc(tr('Мой прогресс'))+'"><span class="tiny" style="min-width:34px;text-align:right">'+myProg+'%</span></div>';
+  let statusLine='';
+  if(isCancelled){
+    statusLine='<div class="st-status cancelled">'+esc(tr('Отменено'))+'</div>';
+  }else if(isCompleted){
+    statusLine='<div class="st-status completed">'+esc(tr('Выполнено'))+' · +'+perXp+' XP</div>';
+  }else{
+    statusLine='<div class="st-status active">'+esc(tr('{done}/{total} участников выполнили',{done:doneN,total:totalN}))+'</div>';
   }
 
   let actions='';
-  if(!isDone){
-    if(me&&myProg<100)actions+='<button type="button" class="btn small primary" data-st-act="complete_mine" data-tid="'+esc(t.id)+'">'+esc(tr('Выполнить'))+'</button>';
-    else if(me&&myProg>=100)actions+='<button type="button" class="btn small ghost" data-st-act="reset_mine" data-tid="'+esc(t.id)+'">'+esc(tr('Отменить'))+'</button>';
+  if(!isDone&&me){
+    if(!myDone){
+      actions+='<button type="button" class="btn small primary" data-st-act="complete_mine" data-tid="'+esc(t.id)+'">'+esc(tr('Выполнить'))+'</button>';
+    }else{
+      actions+='<button type="button" class="btn small ghost" data-st-act="reset_mine" data-tid="'+esc(t.id)+'">'+esc(tr('Снять отметку'))+'</button>';
+    }
     actions+='<button type="button" class="btn small secondary" data-st-act="invite_more" data-tid="'+esc(t.id)+'">+</button>';
+    actions+='<button type="button" class="btn small ghost danger" data-st-act="cancel_task" data-tid="'+esc(t.id)+'">'+esc(tr('Отменить задание'))+'</button>';
   }
-  actions+='<button type="button" class="btn small ghost" data-st-act="leave" data-tid="'+esc(t.id)+'">'+esc(tr(t.is_creator?'Удалить':'Выйти'))+'</button>';
+  if(!isDone){
+    actions+='<button type="button" class="btn small ghost" data-st-act="leave" data-tid="'+esc(t.id)+'">'+esc(tr(t.is_creator?'Удалить':'Выйти'))+'</button>';
+  }
 
-  return '<article class="st-card'+(isDone?' done':'')+'">'+
+  const cardCls='st-card'+(isCompleted?' done':'')+(isCancelled?' cancelled':'');
+  return '<article class="'+cardCls+'">'+
     '<div class="st-top"><div><h4 class="st-title" data-nt>'+esc(t.title)+'</h4>'+(t.description?'<p class="st-desc" data-nt>'+esc(t.description)+'</p>':'')+'</div>'+
-    '<span class="st-xp">+'+perXp+' XP</span></div>'+
-    '<div class="st-prog-wrap"><div class="st-prog-meta"><span>'+pct+'%</span><span class="tiny">'+active.length+(invited.length?' +'+invited.length:'')+'</span></div><div class="st-prog-bar"><i style="width:'+pct+'%"></i></div></div>'+
+    '<span class="st-xp">'+(isCancelled?'—':('+'+perXp+' XP'))+'</span></div>'+
+    statusLine+
+    '<div class="st-prog-wrap"><div class="st-prog-meta"><span>'+pct+'%</span><span class="tiny">'+totalN+(invited.length?' +'+invited.length:'')+'</span></div><div class="st-prog-bar"><i style="width:'+pct+'%"></i></div></div>'+
     '<div class="st-members">'+memHtml+'</div>'+
-    '<div class="st-foot">'+controls+'<div class="st-act">'+actions+'</div></div>'+
+    '<div class="st-foot"><div class="st-act">'+actions+'</div></div>'+
   '</article>';
 }
 
@@ -225,6 +269,8 @@ function activityLine(item){
   if(item.kind==='joined')return '<b>'+nm+'</b> '+esc(tr('присоединился(ась) к заданию'))+' «<b data-nt>'+title+'</b>»';
   if(item.kind==='done')return '<b>'+nm+'</b> '+esc(tr('выполнил(а) свою часть в'))+' «<b data-nt>'+title+'</b>»';
   if(item.kind==='completed')return esc(tr('Команда завершила совместное задание'))+' «<b data-nt>'+title+'</b>»';
+  if(item.kind==='cancelled')return '<b>'+nm+'</b> '+esc(tr('отменил(а) совместное задание'))+' «<b data-nt>'+title+'</b>»';
+  if(item.kind==='left')return '<b>'+nm+'</b> '+esc(tr('покинул(а) задание'))+' «<b data-nt>'+title+'</b>»';
   return '<b>'+nm+'</b> '+esc(tr('обновил(а) прогресс'))+' ('+(+item.progress||0)+'%) '+esc(tr('в'))+' «<b data-nt>'+title+'</b>»';
 }
 
@@ -252,11 +298,14 @@ function renderUserSharedActivity(el,profile){
   el.innerHTML='<div class="pc-sec"><div class="row tiny"><span>'+esc(tr('Общие задания'))+'</span><span>'+shared.length+'</span></div><div style="margin-top:10px">'+
     shared.map(t=>{
       const pct=calcOverallProgress(t);
-      return '<div class="srow"><div><b data-nt>'+esc(t.title)+'</b><div class="tiny">'+esc(tr('Прогресс: {p}%',{p:pct}))+'</div></div><span class="tag">'+(pct>=100?esc(tr('Готово')):pct+'%')+'</span></div>';
+      let tag=pct+'%';
+      if(t.status==='completed')tag=esc(tr('Готово'));
+      else if(t.status==='cancelled')tag=esc(tr('Отменено'));
+      return '<div class="srow"><div><b data-nt>'+esc(t.title)+'</b><div class="tiny">'+esc(tr('Прогресс: {p}%',{p:pct}))+'</div></div><span class="tag">'+tag+'</span></div>';
     }).join('')+'</div></div>';
 }
 
-/* ---------- модальные окна: создание, приглашение друзей ---------- */
+/* ---------- модальные окна ---------- */
 function openCreateModal(preselectFriendId){
   const friends=FS().friends||[];
   const fList=friends.length?friends.map(f=>{
@@ -275,7 +324,7 @@ function openCreateModal(preselectFriendId){
       '<input class="field" id="stDesc" maxlength="180" placeholder="'+esc(tr('Необязательно'))+'">'+
       '<label for="stCat">'+esc(tr('Категория'))+'</label>'+
       '<select class="field" id="stCat">'+CATS.map(c=>'<option value="'+c[0]+'">'+esc(tr(c[1]))+'</option>').join('')+'</select>'+
-      '<div class="tiny hint">'+esc(tr('Награда: 10 XP + 10%, делится поровну между участниками.'))+'</div>'+
+      '<div class="tiny hint">'+esc(tr('Награда: 10 XP + 10%, делится поровну между участниками. Каждый должен подтвердить выполнение.'))+'</div>'+
       '<label>'+esc(tr('Пригласить друзей'))+'</label>'+
       '<div class="st-fpick">'+fList+'</div>'+
       '<div class="row" style="margin-top:18px"><button type="button" class="btn ghost" onclick="closeModal()">'+esc(tr('Отмена'))+'</button><button type="submit" class="btn primary">'+esc(tr('Создать'))+'</button></div>'+
@@ -304,7 +353,7 @@ function openInviteMoreModal(taskId){
 }
 
 function openInviteFriendModal(friendId,friendName){
-  const activeTasks=T.tasks.filter(t=>t.status!=='completed'&&!(t.members||[]).some(m=>m.id===friendId||m.form_id===friendId));
+  const activeTasks=T.tasks.filter(t=>t.status==='active'&&!(t.members||[]).some(m=>m.id===friendId||m.form_id===friendId));
   if(!activeTasks.length){
     return openCreateModal(friendId);
   }
@@ -317,12 +366,48 @@ function openInviteFriendModal(friendId,friendName){
   showModal();
 }
 
+function openCancelConfirm(taskId){
+  const task=T.tasks.find(t=>t.id===taskId);
+  if(!task||task.status!=='active')return;
+  $('modal').innerHTML='<h3>'+esc(tr('Отменить задание?'))+'</h3>'+
+    '<p class="sub" data-nt>'+esc(task.title)+'</p>'+
+    '<p class="tiny">'+esc(tr('Задание получит статус «Отменено». XP не будет начислено. Это действие увидят все участники.'))+'</p>'+
+    '<div class="row" style="margin-top:18px">'+
+      '<button type="button" class="btn ghost" onclick="closeModal()">'+esc(tr('Назад'))+'</button>'+
+      '<button type="button" class="btn primary" data-st-act="confirm_cancel" data-tid="'+esc(taskId)+'">'+esc(tr('Отменить задание'))+'</button>'+
+    '</div>';
+  showModal();
+}
+
 /* ---------- обработчики действий ---------- */
-async function updateProgress(taskId,pct){
-  pct=Math.max(0,Math.min(100,Math.round(+pct||0)));
+async function confirmDone(taskId){
   try{
-    await rpc('update_shared_task_progress',{p_task_id:taskId,p_progress:pct});
-    toast(pct>=100?tr('Ваша часть задания выполнена!'):tr('Прогресс обновлён: {p}%',{p:pct}));
+    const res=await rpc('confirm_shared_task_done',{p_task_id:taskId});
+    if(res&&res.just_completed){
+      toast(tr('Все участники подтвердили выполнение!'));
+    }else if(res&&res.done){
+      toast(tr('Вы подтвердили выполнение'));
+    }else{
+      toast(tr('Прогресс обновлён'));
+    }
+    await refresh(true);
+  }catch(e){toast(human(e))}
+}
+
+async function resetDone(taskId){
+  try{
+    await rpc('update_shared_task_progress',{p_task_id:taskId,p_progress:0});
+    toast(tr('Отметка снята'));
+    await refresh(true);
+  }catch(e){toast(human(e))}
+}
+
+async function cancelTask(taskId){
+  try{
+    closeModal();
+    const res=await rpc('cancel_shared_task',{p_task_id:taskId});
+    if(res&&res.already)toast(tr('Задание уже отменено'));
+    else toast(tr('Задание отменено'));
     await refresh(true);
   }catch(e){toast(human(e))}
 }
@@ -335,8 +420,10 @@ document.addEventListener('click',async e=>{
     if(act==='open_create')return openCreateModal();
     if(act==='open_create_for'){closeModal();return openCreateModal(fid)}
     if(act==='invite_more')return openInviteMoreModal(tid);
-    if(act==='complete_mine')return updateProgress(tid,100);
-    if(act==='reset_mine')return updateProgress(tid,0);
+    if(act==='complete_mine')return confirmDone(tid);
+    if(act==='reset_mine')return resetDone(tid);
+    if(act==='cancel_task')return openCancelConfirm(tid);
+    if(act==='confirm_cancel')return cancelTask(tid);
     if(act==='accept_invite'){
       await rpc('respond_shared_task_invite',{p_task_id:tid,p_accept:true});
       toast(tr('Вы присоединились к совместному заданию'));
@@ -358,11 +445,6 @@ document.addEventListener('click',async e=>{
       await refresh(true);
     }
   }catch(err){toast(human(err))}
-});
-
-document.addEventListener('change',e=>{
-  const r=e.target.closest('[data-st-range]');
-  if(r)updateProgress(r.dataset.stRange,r.value);
 });
 
 document.addEventListener('submit',async e=>{

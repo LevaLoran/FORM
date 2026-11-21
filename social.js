@@ -484,6 +484,7 @@ function notifLine(n,plain){
   if(n.type==='shared_task_progress')return i18('{n} обновил(а) прогресс в задании «{t}» ({p}%)',{n:nm,t:clean(n.data&&n.data.title),p:Math.round(+(n.data&&n.data.pct)||0)});
   if(n.type==='shared_task_done')return i18('{n} выполнил(а) свою часть задания «{t}»',{n:nm,t:clean(n.data&&n.data.title)});
   if(n.type==='shared_task_completed')return i18('Совместное задание «{t}» полностью выполнено!',{t:clean(n.data&&n.data.title)});
+  if(n.type==='shared_task_cancelled')return i18('Совместное задание «{t}» отменено',{t:clean(n.data&&n.data.title)});
   if(n.data&&n.data.k==='username_reset')return i18('Из соображений приватности ваше имя пользователя заменено: раньше оно было похоже на адрес почты. Новое имя можно выбрать в редакторе профиля.');
   const k=n.data&&n.data.k;
   if(k==='welcome')return plain?i18('Добро пожаловать в FORM'):i18('Добро пожаловать в FORM. У вас появился собственный FORM ID: найдите друзей, оформите профиль и настройте приватность.');
