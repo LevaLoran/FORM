@@ -220,7 +220,7 @@ function renderTaskCard(t){
   }
 
   const cardCls='st-card'+(isCompleted?' done':'')+(isCancelled?' cancelled':'');
-  return '<article class="'+cardCls+'">'+
+  return '<article class="'+cardCls+'" data-st-task-id="'+esc(t.id)+'">'+
     '<div class="st-top"><div><h4 class="st-title" data-nt>'+esc(t.title)+'</h4>'+(t.description?'<p class="st-desc" data-nt>'+esc(t.description)+'</p>':'')+'</div>'+
     '<span class="st-xp">'+(isCancelled?'—':('+'+perXp+' XP'))+'</span></div>'+
     statusLine+
@@ -240,7 +240,7 @@ function renderContainer(){
     invHtml='<div class="st-inv-box"><div class="st-inv-title">'+esc(tr('Приглашения в совместные задания ({n})',{n:T.invites.length}))+'</div>'+
       T.invites.map(inv=>{
         const from=inv.inviter_name||'@'+inv.inviter_username||'Друг';
-        return '<div class="st-inv-row"><div><b data-nt>'+esc(inv.title)+'</b><div class="tiny" data-nt>'+esc(tr('От: {n}',{n:from}))+'</div></div>'+
+        return '<div class="st-inv-row" data-st-invite-id="'+esc(inv.task_id)+'"><div><b data-nt>'+esc(inv.title)+'</b><div class="tiny" data-nt>'+esc(tr('От: {n}',{n:from}))+'</div></div>'+
           '<div class="fract"><button type="button" class="btn small primary" data-st-act="accept_invite" data-tid="'+esc(inv.task_id)+'">'+esc(tr('Принять'))+'</button><button type="button" class="btn small ghost" data-st-act="decline_invite" data-tid="'+esc(inv.task_id)+'">'+esc(tr('Отклонить'))+'</button></div></div>';
       }).join('')+'</div>';
   }
@@ -412,11 +412,33 @@ async function cancelTask(taskId){
   }catch(e){toast(human(e))}
 }
 
+async function openTask(taskId){
+  if(typeof window.showScreen==='function')window.showScreen('dashboard');
+  await refresh(true);
+  // Дождаться отображения раздела после перехода на главную
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    const wanted=String(taskId);
+    const invite=[...document.querySelectorAll('[data-st-invite-id]')].find(el=>el.dataset.stInviteId===wanted);
+    const card=[...document.querySelectorAll('[data-st-task-id]')].find(el=>el.dataset.stTaskId===wanted);
+    const target=invite||card;
+    const fallback=document.getElementById('sharedTasksSection');
+    const el=target||fallback;
+    if(el){
+      el.scrollIntoView({behavior:'smooth',block:'center'});
+      const old=el.style.outline;
+      el.style.outline='2px solid var(--accent, currentColor)';
+      el.style.outlineOffset='4px';
+      setTimeout(()=>{el.style.outline=old;el.style.outlineOffset=''},2200);
+    }
+  }));
+}
+
 document.addEventListener('click',async e=>{
   const btn=e.target.closest('[data-st-act]');
   if(!btn)return;
   const act=btn.dataset.stAct,tid=btn.dataset.tid,fid=btn.dataset.fid;
   try{
+    if(act==='open_task')return openTask(tid);
     if(act==='open_create')return openCreateModal();
     if(act==='open_create_for'){closeModal();return openCreateModal(fid)}
     if(act==='invite_more')return openInviteMoreModal(tid);
@@ -498,6 +520,7 @@ window.FormSharedTasks={
   openCreateModal,
   openInviteFriendModal,
   hasPendingInvite:tid=>T.invites.some(i=>i.task_id===tid),
+  openTask,
   render:renderContainer
 };
 
