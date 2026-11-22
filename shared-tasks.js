@@ -245,18 +245,21 @@ function renderContainer(){
       }).join('')+'</div>';
   }
 
+  // Отменённые задания остаются в данных и ленте активности,
+  // но не показываются в основном списке совместных заданий.
+  const visibleTasks=(T.tasks||[]).filter(t=>t.status!=='cancelled');
   let listHtml='';
-  if(T.loading&&!T.tasks.length){
+  if(T.loading&&!visibleTasks.length){
     listHtml='<div class="empty">'+esc(tr('Загружаю совместные задания…'))+'</div>';
-  }else if(T.err&&!T.tasks.length){
+  }else if(T.err&&!visibleTasks.length){
     listHtml='<div class="empty">'+esc(human(T.err))+'</div>';
-  }else if(!T.tasks.length){
+  }else if(!visibleTasks.length){
     listHtml='<div class="empty">'+esc(tr('Пока нет совместных заданий. Создайте общее задание и пригласите друзей.'))+'</div>';
   }else{
-    listHtml=T.tasks.map(renderTaskCard).join('');
+    listHtml=visibleTasks.map(renderTaskCard).join('');
   }
 
-  box.innerHTML='<div class="st-head"><div class="sectiontitle"><span>'+esc(tr('Совместные задания'))+'</span><span>'+T.tasks.length+'</span></div>'+
+  box.innerHTML='<div class="st-head"><div class="sectiontitle"><span>'+esc(tr('Совместные задания'))+'</span><span>'+visibleTasks.length+'</span></div>'+
     '<button type="button" class="btn small primary" data-st-act="open_create">+ '+esc(tr('Создать'))+'</button></div>'+
     invHtml+listHtml;
 }
