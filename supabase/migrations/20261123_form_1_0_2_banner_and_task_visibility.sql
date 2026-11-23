@@ -24,11 +24,9 @@ DROP POLICY IF EXISTS st_hidden_insert ON public.shared_task_hidden;
 DROP POLICY IF EXISTS st_hidden_delete ON public.shared_task_hidden;
 CREATE POLICY st_hidden_read ON public.shared_task_hidden FOR SELECT TO authenticated
  USING ((select auth.uid()) = user_id);
+-- This is a per-account preference; only the current user may write their own record.
 CREATE POLICY st_hidden_insert ON public.shared_task_hidden FOR INSERT TO authenticated
- WITH CHECK ((select auth.uid()) = user_id AND EXISTS (
-  SELECT 1 FROM public.shared_task_members m WHERE m.task_id=task_id
-    AND m.user_id=(select auth.uid()) AND m.status='accepted'
-  ));
+ WITH CHECK ((select auth.uid()) = user_id);
 CREATE POLICY st_hidden_delete ON public.shared_task_hidden FOR DELETE TO authenticated
  USING ((select auth.uid()) = user_id);
 
