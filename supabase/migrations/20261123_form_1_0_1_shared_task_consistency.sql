@@ -243,18 +243,11 @@ CREATE OR REPLACE FUNCTION public._theme(p jsonb)
  SET search_path TO 'public'
 AS $function$
   select jsonb_build_object(
-    'color2', case when p->>'color2' ~ '^#[0-9a-fA-F]{6} when p->>'color'  ~ '^#[0-9a-fA-F]{6}$' then lower(p->>'color') else '#2f5bea' end,
+    'color', case when p->>'color' ~ '^#[0-9a-fA-F]{6}$' then lower(p->>'color') else '#2f5bea' end,
+    'color2', case when p->>'color2' ~ '^#[0-9a-fA-F]{6}$' then lower(p->>'color2') else null end,
     'banner', case when p->>'banner' in ('color','image') then p->>'banner' else 'color' end,
-    'deco',   case when p->>'deco'   in ('none','dots','grid','lines','orbit') then p->>'deco' else 'dots' end,
-    'bg',     case when p->>'bg'     in ('none','tint','image') then p->>'bg' else 'none' end,
-    'frame',  case when p->>'frame'  in ('none','ring','dots','double','square','orbit','halo','aurora','crown','void') then p->>'frame' else 'none' end
-  )
-$function$
- then lower(p->>'color2') else null end,
-    'color',  case when p->>'color'  ~ '^#[0-9a-fA-F]{6}$' then lower(p->>'color') else '#2f5bea' end,
-    'banner', case when p->>'banner' in ('color','image') then p->>'banner' else 'color' end,
-    'deco',   case when p->>'deco'   in ('none','dots','grid','lines','orbit') then p->>'deco' else 'dots' end,
-    'bg',     case when p->>'bg'     in ('none','tint','image') then p->>'bg' else 'none' end,
-    'frame',  case when p->>'frame'  in ('none','ring','dots','double','square','orbit','halo','aurora','crown','void') then p->>'frame' else 'none' end
+    'deco', case when p->>'deco' in ('none','dots','grid','lines','orbit') then p->>'deco' else 'dots' end,
+    'bg', case when p->>'bg' in ('none','tint','image') then p->>'bg' else 'none' end,
+    'frame', case when p->>'frame' in ('none','ring','dots','double','square','orbit','halo','aurora','crown','void') then p->>'frame' else 'none' end
   )
 $function$;
