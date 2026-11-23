@@ -1,0 +1,33 @@
+/* FORM 1.0.2 — restored banner gradients and decorative presets. */
+.pcard[data-grad="1"] .pc-banner[data-img="0"]{background-image:linear-gradient(120deg,var(--pc),var(--pc2))}
+.pc-banner[data-deco="ascii"]::after{content:"+ 0 1 × + 0 1 × + 0 1 × + 0 1 ×";background:repeating-linear-gradient(0deg,transparent 0 23px,rgba(255,255,255,.06) 23px 24px);font:700 20px/30px ui-monospace,monospace;letter-spacing:12px;color:rgba(255,255,255,.45);overflow:hidden;padding:8px 12px;word-break:break-all}
+.pc-banner[data-deco="binary"]::after{content:"01010011 00110001 10110101 01101010 00010101 10101011";background:repeating-linear-gradient(0deg,transparent 0 22px,rgba(255,255,255,.05) 22px 23px);font:600 17px/24px ui-monospace,monospace;letter-spacing:4px;color:rgba(255,255,255,.4);overflow:hidden;padding:7px 12px;word-break:break-all}
+.st-detail .st-card{margin-top:12px}.st-detail .st-act .btn{min-height:36px}
+.st-card.done .st-act [data-st-act="hide_task"]{display:inline-flex!important}
+/* Radial RPG overview uses existing FORM category color tokens. */
+.fw-overview{background:#101014;color:#f3f4f8;border:1px solid #282831;border-radius:22px;padding:clamp(14px,3vw,28px);margin:12px 0 26px;box-shadow:0 20px 60px #0002}
+.fw-title{display:flex;justify-content:space-between;align-items:start;gap:12px}
+.fw-title h3{font:800 clamp(24px,4vw,33px)/1.15 var(--sans);letter-spacing:-.045em;margin:8px 0}
+.fw-title p{font:13px/1.5 var(--sans);color:#a2a2b0;margin:0}
+.fw-kicker{font:700 10px var(--mono);letter-spacing:.13em;color:#a0a2b5}
+.fw-badge{color:#c4c7d1;background:#252530;border:1px solid #363640;border-radius:99px;padding:9px 12px;font:11px var(--mono);white-space:nowrap}
+.fw-chart{max-width:440px;margin:0 auto}.fw-chart svg{display:block;width:100%;height:auto;overflow:visible}
+.fw-segment{cursor:pointer;outline:none;transition:opacity .2s ease;--fw-color:#aaa}
+.fw-segment .fw-background{fill:#292931;stroke:#101014;stroke-width:2}
+.fw-segment .fw-fill{fill:var(--fw-color);opacity:.86;filter:drop-shadow(0 0 10px color-mix(in srgb,var(--fw-color) 27%,transparent));transition:filter .2s ease}
+.fw-segment:hover .fw-fill,.fw-segment:focus-visible .fw-fill{filter:brightness(1.22) drop-shadow(0 0 10px var(--fw-color))}
+.fw-segment:focus-visible .fw-background{stroke:#fff;stroke-width:4}
+.fw-icon{fill:#f9f9fd;font:600 38px var(--sans);pointer-events:none;text-shadow:0 2px 12px #0009}
+.fw-center{fill:#111116;stroke:#34343d;stroke-width:2;filter:drop-shadow(0 2px 12px #0006)}
+.fw-central{pointer-events:none}.fw-central-kicker{fill:#8d90a1;font:700 12px var(--mono);letter-spacing:.13em}
+.fw-central-value{fill:#fff;font:800 47px var(--sans);letter-spacing:-.06em}.fw-central-max{fill:#9ca0af;font:600 22px var(--sans)}
+.fw-central-sub{fill:#8d90a1;font:600 10px var(--mono);letter-spacing:.2em}
+.fw-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.fw-item{min-width:0;min-height:76px;display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #303039;border-radius:14px;background:#1d1d23;text-align:left;color:#f2f3f5;cursor:pointer;transition:background .2s,border-color .2s,transform .2s}
+.fw-item:hover,.fw-item:focus-visible{background:#28282e;border-color:var(--fw-color);transform:translateY(-2px)}
+.fw-item-icon{flex:none;width:43px;height:43px;border-radius:14px;background:color-mix(in srgb,var(--fw-color) 22%,#17171d);color:var(--fw-color);display:grid;place-items:center;font:700 23px var(--sans)}
+.fw-item-copy{flex:1;min-width:0}.fw-item-copy strong{font:700 15px/1.2 var(--sans);display:block}.fw-item-copy small{font:11px/1.4 var(--sans);color:#a4a4b0;display:block;margin-top:4px}
+.fw-item-score{font:700 15px var(--sans);color:var(--fw-color);white-space:nowrap}.fw-item-score span{color:#797987;margin-left:3px}
+.fw-footnote{font:11px/1.5 var(--sans);color:#9697a3;margin-top:14px}
+@media(max-width:540px){.fw-overview{border-radius:16px;padding:14px}.fw-title{flex-wrap:wrap}.fw-badge{padding:5px 8px}.fw-list{grid-template-columns:1fr}.fw-chart{max-width:370px}.fw-item{min-height:68px}.fw-icon{font-size:34px}}
+@media(prefers-reduced-motion:reduce){.fw-segment,.fw-item,.fw-segment .fw-fill{transition:none!important}}
