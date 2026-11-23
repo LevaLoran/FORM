@@ -110,6 +110,7 @@ function grantSharedReward(task){
   if(typeof render==='function')render();
   if(typeof fxSound==='function')fxSound('win');
   toast(tr('Совместное задание выполнено! +{xp} XP',{xp:myXp}));
+  window.FormAI&&window.FormAI.react('celebration');
 }
 
 function checkCompletedRewards(){

@@ -243,7 +243,7 @@ function toggleMission(id){
  const msgs=[],r=rankIndex(state.xp);
  const up=r>state.lastRank;if(up){state.lastRank=r;msgs.push(i18('Новый ранг · {r}',{r:rankNames[r]}))}else msgs.push(i18('Задача выполнена · +{n} XP',{n:XP_PER_MISSION}));
  const extras=checkMedals().map(n=>['Достижение',n]);
- save();render();(window.freshSkills||[]).forEach(n=>extras.push(['Навык открыт',n]));if(window.fxBadge&&extras.length&&!matchMedia('(prefers-reduced-motion:reduce)').matches){extras.forEach(x=>fxBadge(x[0],x[1]));toast(msgs[0])}else toast(msgs.concat(extras.map(x=>i18(x[0])+' · '+i18(x[1]))).join('  ·  '));bump($('totalXp'));bump($('rankBar'));window.fxGain&&fxGain('+'+XP_PER_MISSION+' XP');window.fxSound&&fxSound('win');if(up){bump($('rankCrest'),'rankup');window.fxRank&&fxRank(r)}
+ save();render();(window.freshSkills||[]).forEach(n=>extras.push(['Навык открыт',n]));if(window.fxBadge&&extras.length&&!matchMedia('(prefers-reduced-motion:reduce)').matches){extras.forEach(x=>fxBadge(x[0],x[1]));toast(msgs[0])}else toast(msgs.concat(extras.map(x=>i18(x[0])+' · '+i18(x[1]))).join('  ·  '));bump($('totalXp'));bump($('rankBar'));window.fxGain&&fxGain('+'+XP_PER_MISSION+' XP');window.fxSound&&fxSound('win');if(up){bump($('rankCrest'),'rankup');window.fxRank&&fxRank(r)};window.FormAI&&window.FormAI.react(up?'celebration':'happy')
 }
 function undoMission(m){
  // отмена выполнения: возвращаем XP, очко навыка и запись истории за сегодня
