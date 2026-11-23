@@ -31,3 +31,10 @@ CREATE POLICY st_hidden_insert ON public.shared_task_hidden FOR INSERT TO authen
   ));
 CREATE POLICY st_hidden_delete ON public.shared_task_hidden FOR DELETE TO authenticated
  USING ((select auth.uid()) = user_id);
+
+-- Supabase upsert uses UPDATE on conflict, even for a same-account hidden record.
+GRANT UPDATE ON public.shared_task_hidden TO authenticated;
+DROP POLICY IF EXISTS st_hidden_update ON public.shared_task_hidden;
+CREATE POLICY st_hidden_update ON public.shared_task_hidden FOR UPDATE TO authenticated
+ USING ((select auth.uid()) = user_id)
+ WITH CHECK ((select auth.uid()) = user_id);
