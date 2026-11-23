@@ -247,3 +247,12 @@
 - Переключение экранов использует мгновенный сброс вертикальной прокрутки вместо конкурирующей плавной анимации.
 - Сброс состояния направления прокрутки синхронизирован с переключением экранов, чтобы шапка не сворачивалась повторно из-за устаревшего значения.
 - Обновлена версия приложения и кэш сервис-воркера до `form-b020`.
+
+## FORM 1.1.0 — FORM AI BETA (2026-11-23)
+
+- Added animated layered SVG guide with seven distinct reaction states, reduced-motion and visibility optimizations.
+- Added local guide UI with task recommendations, progress summaries, brief plans and real task editor integration.
+- Added task and rank reactions and shared-task celebration when XP is awarded.
+- Removed banner decorative overlays (ASCII, binary, and geometric patterns) without clearing existing banner customization or profile data.
+- Updated PWA cache to `form-v1-1-0`.
+- Generative chat remains unconnected and requires server-side AI API setup. See `FORM_AI_BETA.md`.

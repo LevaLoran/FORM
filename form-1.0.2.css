@@ -1,7 +1,5 @@
-/* FORM 1.0.2 — restored banner gradients and decorative presets. */
+/* FORM 1.0.2 — preserve reliable banner gradient rendering. */
 .pcard[data-grad="1"] .pc-banner[data-img="0"]{background-image:linear-gradient(120deg,var(--pc),var(--pc2))}
-.pc-banner[data-deco="ascii"]::after{content:"+ 0 1 × + 0 1 × + 0 1 × + 0 1 ×";background:repeating-linear-gradient(0deg,transparent 0 23px,rgba(255,255,255,.06) 23px 24px);font:700 20px/30px ui-monospace,monospace;letter-spacing:12px;color:rgba(255,255,255,.45);overflow:hidden;padding:8px 12px;word-break:break-all}
-.pc-banner[data-deco="binary"]::after{content:"01010011 00110001 10110101 01101010 00010101 10101011";background:repeating-linear-gradient(0deg,transparent 0 22px,rgba(255,255,255,.05) 22px 23px);font:600 17px/24px ui-monospace,monospace;letter-spacing:4px;color:rgba(255,255,255,.4);overflow:hidden;padding:7px 12px;word-break:break-all}
 .st-detail .st-card{margin-top:12px}.st-detail .st-act .btn{min-height:36px}
 .st-card.done .st-act [data-st-act="hide_task"]{display:inline-flex!important}
 /* Radial RPG overview uses existing FORM category color tokens. */

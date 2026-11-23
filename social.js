@@ -239,7 +239,7 @@ function badgeHTML(name,on){
 /* v — профиль в формате сервера; o.actions — HTML кнопок */
 function cardHTML(v,o){
   o=o||{};
-  const th=v.theme||{},col=hex(th.color),deco=th.deco||'none',c2=/^#[0-9a-f]{6}$/i.test(th.color2||'')?th.color2:'';
+  const th=v.theme||{},col=hex(th.color),deco='none',c2=/^#[0-9a-f]{6}$/i.test(th.color2||'')?th.color2:'';
   if(v.limited){
     return '<div class="pcard" style="--pc:'+col+'"><div class="pc-banner" data-deco="none"></div><div class="pc-main"><div class="pc-avrow">'+avHTML({...v,color:col,frame:th.frame,online:null},88,{big:true})+'<div class="pc-act">'+(o.actions||'')+'</div></div><div class="pc-nm" style="margin-top:12px"><h2 class="pc-name" data-nt>'+esc(dispName(v))+'</h2>'+tagsHTML(v.tags)+'</div><div class="pc-ids">'+idChip(v.id)+'<span class="tiny" data-nt>@'+esc(v.username)+'</span></div><p class="sub pc-lim">'+esc(i18('Этот пользователь ограничил просмотр профиля.'))+'</p></div></div>';
   }
@@ -553,7 +553,6 @@ async function setPriv(patch){
 
 /* ---------- редактор профиля: вкладка «Профиль», все настройки в одном месте ---------- */
 const COLORS=['#111111','#3a3a42','#6b6b73','#a3a3ab','#ffffff','#2f5bea','#4f7bff','#0b8fa6','#00a3a3','#00677f','#1f9d63','#3d8f2f','#7fb800','#c2b500','#c77b00','#ffa94d','#e05a3a','#d93b3b','#8a3a1f','#c2399a','#d1478a','#ff6b9d','#8e44ad','#6b5be2','#5b2a86','#2a2a8a','#4dabf7','#69db7c','#b197fc','#006d4a'];
-const DECOS=[['none','Нет'],['dots','Точки'],['grid','Сетка'],['lines','Линии'],['orbit','Орбита'],['ascii','ASCII'],['binary','Код']];
 const BGS=[['none','Обычный'],['tint','Оттенок цвета'],['image','Моё изображение']];
 const GIF_MAX={avatar:450000,banner:650000,bg:650000}; // байты файла: в базу GIF кладётся как есть (с анимацией)
 let prevTm=null;
@@ -610,7 +609,6 @@ function drawEditorParts(){
   if(ag)ag.innerHTML='<button type="button" class="btn secondary small" onclick="openAvatar()">'+esc(i18('Изменить фото'))+'</button>'+fileBtn('peAvGif','GIF-аватар','image/gif')+(D.avatar_anim?'<button type="button" class="btn ghost small" data-del="avgif">'+esc(i18('Убрать GIF'))+'</button>':'');
   const bi=$('peBanner');
   if(bi)bi.innerHTML=segHTML('banner',[['color','Цвет'],['image','Изображение или GIF']],D.banner)+(D.banner==='image'?'<div class="row" style="gap:8px;margin-top:8px;justify-content:flex-start">'+fileBtn('peBannerFile',D.banner_image?'Заменить':'Загрузить','image/*')+(D.banner_image?'<button type="button" class="btn ghost small" data-del="banner">'+esc(i18('Убрать'))+'</button>':'')+'</div>':'');
-  const dc=$('peDeco');if(dc)dc.innerHTML=segHTML('deco',DECOS,D.deco);
   const bg=$('peBg');
   if(bg)bg.innerHTML=segHTML('bg',BGS,D.bg)+(D.bg==='image'?'<div class="row" style="gap:8px;margin-top:8px;justify-content:flex-start">'+fileBtn('peBgFile',D.bg_image?'Заменить':'Загрузить','image/*')+(D.bg_image?'<button type="button" class="btn ghost small" data-del="bg">'+esc(i18('Убрать'))+'</button>':'')+'</div>':'');
   const pn=$('pePins');
@@ -635,7 +633,6 @@ function renderEditor(){
    '<div class="row" id="peAvBtns" style="justify-content:flex-start;gap:8px;flex-wrap:wrap"></div><div class="tiny hint">'+esc(i18('GIF: до 450 КБ для аватара, до 650 КБ для баннера и фона.'))+'</div>'+
    '<div class="tiny" style="margin:16px 0 8px">'+esc(i18('Рамка аватара'))+'</div><div class="frames" id="peFrames"></div>'+
    '<div class="tiny" style="margin:16px 0 8px">'+esc(i18('Баннер'))+'</div><div id="peBanner"></div>'+
-   '<div class="tiny" style="margin:16px 0 8px">'+esc(i18('Декор баннера'))+'</div><div id="peDeco"></div>'+
    asc('02 · Информация')+
    '<label for="peName" style="margin-top:0">'+esc(i18('Отображаемое имя'))+'</label><input class="field" id="peName" maxlength="18" autocomplete="off" spellcheck="false" value="'+esc(D.display)+'" placeholder="'+esc(i18('ПОЛЬЗОВАТЕЛЬ'))+'">'+
    '<label for="peUser">'+esc(i18('Имя пользователя'))+'</label><div class="atfield"><span>@</span><input class="field" id="peUser" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false" value="'+esc(D.username)+'"'+(left>0?' disabled':'')+'></div><div class="tiny hint">'+esc(left>0?i18('Следующая смена имени пользователя через {n} дн.',{n:left}):i18('3–20 символов: латиница, цифры, _ и точка. Менять можно раз в 7 дней.'))+'</div>'+

@@ -74,11 +74,6 @@ html[data-anim=on] .f-orbit::before{animation:pfspin 24s linear infinite}
 .pcard[data-bg=tint]{background:color-mix(in srgb,var(--pc) 7%,var(--surf))}
 .pcard[data-bg=image]{background-image:linear-gradient(color-mix(in srgb,var(--surf) 86%,transparent),color-mix(in srgb,var(--surf) 90%,transparent)),var(--bgimg);background-size:cover;background-position:center}
 .pc-banner{position:relative;height:116px;background-color:var(--pc);background-size:cover;background-position:center}
-.pc-banner::after{content:"";position:absolute;inset:0;pointer-events:none}
-.pc-banner[data-deco=dots]::after{background:radial-gradient(rgba(255,255,255,.4) 1.4px,transparent 1.7px) 0 0/14px 14px}
-.pc-banner[data-deco=grid]::after{background:linear-gradient(rgba(255,255,255,.26) 1px,transparent 1px) 0 0/18px 18px,linear-gradient(90deg,rgba(255,255,255,.26) 1px,transparent 1px) 0 0/18px 18px}
-.pc-banner[data-deco=lines]::after{background:repeating-linear-gradient(135deg,rgba(255,255,255,.28) 0 1px,transparent 1px 11px)}
-.pc-banner[data-deco=orbit]::after{background:repeating-radial-gradient(circle at 82% 50%,rgba(255,255,255,.32) 0 1px,transparent 1px 18px)}
 .pc-main{padding:0 18px 20px}
 .pc-avrow{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-top:-44px;position:relative}
 .pc-avrow .pav{background:var(--surf);box-shadow:0 0 0 4px var(--surf)}
