@@ -99,7 +99,7 @@ function normalize(raw){
  return s;
 }
 let state=load();
-const APP_VERSION='1.0.0',DB_NAME='lifeProtocolDB',DB_VER=1;
+const APP_VERSION='1.0.2',DB_NAME='lifeProtocolDB',DB_VER=1;
 let dbp=null,ready=false,idbOk=true;
 const getDb=()=>dbp||(dbp=new Promise((res,rej)=>{const r=indexedDB.open(DB_NAME,DB_VER);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('kv'))r.result.createObjectStore('kv')};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}));
 const idbGet=k=>getDb().then(db=>new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}));
@@ -433,17 +433,17 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;',
 const treeGroups=[['Люди и творчество',['SOCIAL','CREATIVITY']],['Разум',['INTELLIGENCE','TECHNICAL']],['Воля и тело',['DISCIPLINE','FITNESS']]];
 const treeOrder=treeGroups.flatMap(g=>g[1]);
 const treeLab={INTELLIGENCE:'Интеллект',DISCIPLINE:'Дисциплина',FITNESS:'Физика',CREATIVITY:'Творчество',TECHNICAL:'Техника',SOCIAL:'Социум'};
-// 4 ступени: база → практика → мастерство → вершина. Пороги выше, путь длиннее.
+// 8 ступеней развития в каждом направлении; ранее заработанные очки не сбрасываются.
 const tierNames={
-  INTELLIGENCE:['Ученик','Аналитик','Эрудит','Мудрец'],
-  DISCIPLINE:['Режим','Фокус','Воля','Стойкость'],
-  CREATIVITY:['Искра','Ремесло','Мастер','Визионер'],
-  FITNESS:['Ходок','Атлет','Титан','Легенда тела'],
-  TECHNICAL:['Самоделкин','Инженер','Архитектор','Создатель'],
-  SOCIAL:['Связной','Оратор','Лидер','Вдохновитель']
+  INTELLIGENCE:['Ученик','Аналитик','Эрудит','Мудрец','Исследователь','Стратег','Профессор','Провидец'],
+  DISCIPLINE:['Режим','Фокус','Воля','Стойкость','Самоконтроль','Настойчивость','Несгибаемость','Железная воля'],
+  CREATIVITY:['Искра','Ремесло','Мастер','Визионер','Экспериментатор','Новатор','Автор','Легенда творчества'],
+  FITNESS:['Ходок','Атлет','Титан','Легенда тела','Выносливость','Мастер движения','Покоритель','Предел возможностей'],
+  TECHNICAL:['Самоделкин','Инженер','Архитектор','Создатель','Разработчик','Системщик','Изобретатель','Технолог'],
+  SOCIAL:['Связной','Оратор','Лидер','Вдохновитель','Переговорщик','Организатор','Наставник','Объединитель']
 };
-const TIER_COUNT=4;
-const tierAt=[0,15,35,65]; // очки направления для открытия ступени
+const TIER_COUNT=8;
+const tierAt=[0,15,35,65,105,155,215,290]; // очки направления для открытия ступени
 const LVL_SPAN=12;         // очков на один уровень внутри ступени
 const LVL_MAX=6;           // уровней на ступень (1…6)
 const cross={INTELLIGENCE:'TECHNICAL',DISCIPLINE:'FITNESS',CREATIVITY:'INTELLIGENCE',FITNESS:'DISCIPLINE',TECHNICAL:'DISCIPLINE',SOCIAL:'CREATIVITY'};
@@ -451,7 +451,11 @@ const tierDesc=[
   'Базовая ступень направления, открыта сразу. Набирайте очки задачами этой ветки.',
   'Практика: нужна предыдущая ступень этой ветки и 15 очков направления.',
   'Мастерство: нужна предыдущая ступень и ступень I соседнего направления.',
-  'Вершина ветки: нужна предыдущая ступень и ступень II соседнего направления. Долгий путь.'
+  'Вершина ветки: нужна предыдущая ступень и ступень II соседнего направления. Долгий путь.',
+  'Углубление специализации: 105 очков и изученные прошлые ступени.',
+  'Мастерское применение: 155 очков, развитая смежная ветка.',
+  'Экспертная практика: 215 очков и последовательная прокачка.',
+  'Легендарное развитие: 290 очков, требует упорства и баланса направлений.'
 ];
 const feeds=c=>Object.keys(skillMap).filter(k=>skillMap[k]===c).map(k=>i18(categories[k])).join(', ');
 const PADX=14,COLW=150,NW=128,NH=92,ROWH=138,TOP=70;
@@ -464,7 +468,7 @@ function nodeInfo(c,t){
   if(t>0)pre.push([c,t-1]);
   // Ступень 2+ требует соседнюю ветку на ступень t-2 (минимум 0), ступень 3 — соседнюю на 1
   if(t>=2)pre.push([cross[c],Math.max(0,t-2)]);
-  if(t>=3)pre.push([cross[c],1]);
+  if(t>=3)pre.push([cross[c],Math.min(2,Math.floor((t-1)/2))]);
   // Уникализируем предусловия
   const seen=new Set(),uniq=[];
   pre.forEach(([cc,tt])=>{const k=cc+tt;if(!seen.has(k)){seen.add(k);uniq.push([cc,tt])}});
@@ -497,7 +501,7 @@ function renderTree(){
       nd+=`<button class="tnode st-${st}${pulse.has(key)?' new':''}${TV.sel===key?' sel':''}" style="left:${PADX+i*COLW}px;top:${ty(t)}px;--c:var(--c-${c})" data-c="${c}" data-t="${t}" aria-label="${i18(tierNames[c][t])}, ${i18(treeLab[c])}: ${sub}"><b>${tierNames[c][t]}</b><span class="ti">${st==='learned'?TI.learned:st==='lock'?TI.lock:''}</span><small>${sub}</small><div class="progress"><i style="width:${n.pct}%"></i></div></button>`;
     }
   });
-  el.innerHTML=`<div class="tree-tools"><div class="tchips">${treeOrder.map(c=>`<button class="chip" style="--c:var(--c-${c})" onclick="treeFocus('${c}')"><i></i>${treeLab[c]}</button>`).join('')}</div><span class="zoomb"><button onclick="treeZoom(.85)" aria-label="Уменьшить">−</button><button onclick="treeZoom(1.18)" aria-label="Увеличить">+</button><button class="t" onclick="treeFit()">Сброс вида</button></span></div><div id="treeVp"><div id="treeCv" style="width:${TW}px;height:${TH}px"><svg width="${TW}" height="${TH}" viewBox="0 0 ${TW} ${TH}" aria-hidden="true">${ln}</svg>${hd}${nd}</div></div><div class="tleg"><span><i class="sw l"></i>изучено</span><span><i class="sw a"></i>доступно</span><span><i class="sw k"></i>закрыто</span><span>сплошная линия — ступени ветки, тонкая — связь с соседним направлением · 4 ступени × 6 уровней</span></div>`;
+  el.innerHTML=`<div class="tree-tools"><div class="tchips">${treeOrder.map(c=>`<button class="chip" style="--c:var(--c-${c})" onclick="treeFocus('${c}')"><i></i>${treeLab[c]}</button>`).join('')}</div><span class="zoomb"><button onclick="treeZoom(.85)" aria-label="Уменьшить">−</button><button onclick="treeZoom(1.18)" aria-label="Увеличить">+</button><button class="t" onclick="treeFit()">Сброс вида</button></span></div><div id="treeVp"><div id="treeCv" style="width:${TW}px;height:${TH}px"><svg width="${TW}" height="${TH}" viewBox="0 0 ${TW} ${TH}" aria-hidden="true">${ln}</svg>${hd}${nd}</div></div><div class="tleg"><span><i class="sw l"></i>изучено</span><span><i class="sw a"></i>доступно</span><span><i class="sw k"></i>закрыто</span><span>сплошная линия — ступени ветки, тонкая — связь с соседним направлением · 8 ступеней × 6 уровней</span></div>`;
   treeApply();
 }
 function treeApply(){
