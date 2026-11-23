@@ -1,3 +1,9 @@
+## 1.0.2 (2026-11-23)
+- Radial RPG skills overview, eight tiers per existing category.
+- Shared-task notification deep links and member controls.
+- Persistent gradient / banner decorations and per-account task hiding.
+- PWA cache refresh; see RELEASE_1.0.2_NOTES.md for verification limits.
+
 ## 1.0.0 (2026-11-23)
 - New themes, theme preview and optional welcome.
 - Profile gradient `color2` normalization migration.
