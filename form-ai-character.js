@@ -1,4 +1,4 @@
-/* FORM AI BETA 1.1.0 — original layered SVG character, no external runtime. */
+/* FORM 1.1.1 / Formik original layered vector rig; no external runtime. */
 (function(){
 'use strict';
 window.FormAICharacter = function(id){
@@ -25,6 +25,8 @@ window.FormAICharacter = function(id){
         <path d="M57 112Q104 41 167 57" fill="none" stroke="#adb2c5" stroke-width="8" opacity=".16"/>
         <g class="fai-eyes" fill="#fff">
           <g class="fai-eye-normal"><ellipse cx="94" cy="116" rx="14" ry="13"/><ellipse cx="148" cy="116" rx="14" ry="13"/></g>
+          <g class="fai-eye-blink" stroke="#fff" stroke-width="5" stroke-linecap="round" fill="none"><path d="M81 117Q94 122 107 117"/><path d="M135 117Q148 122 161 117"/></g>
+          <g class="fai-eye-surprised"><ellipse cx="94" cy="116" rx="16.5" ry="17"/><ellipse cx="148" cy="116" rx="16.5" ry="17"/></g>
           <g class="fai-eye-happy" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round"><path d="M80 122Q94 101 108 121"/><path d="M134 122Q148 101 162 121"/></g>
           <g class="fai-eye-thinking"><path d="M80 122Q93 115 105 121" stroke="#fff" stroke-width="7" stroke-linecap="round" fill="none"/><ellipse cx="148" cy="118" rx="12" ry="8"/></g>
           <g class="fai-eye-sleep" stroke="#fff" stroke-width="5" stroke-linecap="round" fill="none"><path d="M81 124Q94 134 107 124"/><path d="M135 124Q148 134 161 124"/></g>

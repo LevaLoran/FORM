@@ -3,7 +3,7 @@
 <div align="center">
 
 [![Open app](https://img.shields.io/badge/open-levaloran.github.io%2FFORM-111111?style=flat)](https://levaloran.github.io/FORM/)
-![Version](https://img.shields.io/badge/version-1.1.0--beta-2563eb?style=flat)
+![Version](https://img.shields.io/badge/version-1.1.1--formik-2563eb?style=flat)
 ![PWA](https://img.shields.io/badge/PWA-installable-5a0fc8?style=flat)
 ![Languages](https://img.shields.io/badge/languages-12-22863a?style=flat)
 [![Deploy](https://github.com/LevaLoran/FORM/actions/workflows/pages.yml/badge.svg)](https://github.com/LevaLoran/FORM/actions/workflows/pages.yml)
@@ -33,13 +33,15 @@ Most to-do apps stop at checkboxes. FORM. turns the same daily work into a long-
 
 The UI stays quiet and readable — light and dark themes, no clutter.
 
-## FORM AI BETA 1.1.0
+## Formik — local personal guide (1.1.1)
 
-- Floating, animated, layered SVG guide with idle, happy, thinking, talking, surprised, sleep, and celebration states.
-- Offline task-based suggestions, local chat commands, progress summaries and prefilled tasks via the existing FORM editor.
-- Banner visual overlays removed without destroying saved gradient, photo, GIF, or legacy theme data.
-- No AI provider is connected yet: this release intentionally does **not** claim generative model chat. A secure server-side API is needed. See [FORM AI BETA notes](FORM_AI_BETA.md).
-- Pre-release backup: `backup/pre-form-1.1.0-20261123` at the repository's previous exact HEAD.
+- The former **FORM AI BETA** is now **Formik**, a simple local guide without text chat, a neural network, or API keys.
+- Ask common questions with preset buttons; see recommendations based on your own tasks and past activity, daily progress and short plans. Open the existing task editor to add ideas (you choose whether to save).
+- All guide controls and responses follow all 12 application languages. The animated SVG character remains, with a safer blink that cannot shift its eyes.
+- On mobile, drag the narrow Formik tab up or down to move it away from buttons; its expanded panel is closable.
+- Profile editor restores 8 clean gradient presets, keeps user GIF/image support and fixes faint avatar frame previews. The old square frame is retired; saved square settings display as no frame until changed.
+- Existing profile/Supabase data is preserved; no database migration or third-party AI service is required. See [Formik release notes](FORMIK_1.1.1.md).
+- Restore point: [`backup/pre-formik-1.1.1-20261123`](https://github.com/LevaLoran/FORM/tree/backup/pre-formik-1.1.1-20261123).
 
 ## Features
 
