@@ -63,9 +63,10 @@ function sharedRewardPerPerson(task){
 }
 
 function doneCounts(task){
-  const active=acceptedMembers(task);
-  const done=active.filter(m=>m.done||(+m.progress||0)>=100).length;
-  return {done,total:active.length};
+  // Приглашённые тоже часть задания: пока они ждут ответа, прогресс не может быть 100%.
+  const participants=(task.members||[]).filter(m=>m.status==='accepted'||m.status==='invited');
+  const done=participants.filter(m=>m.status==='accepted'&&(m.done||(+m.progress||0)>=100)).length;
+  return {done,total:participants.length};
 }
 
 /* Идемпотентное начисление XP на клиенте по факту серверного xp_awarded / completed */
@@ -80,9 +81,8 @@ function grantSharedReward(task){
   if(state.completed.some(c=>c.id===key||c.id===oldKeyColon||c.id===oldKeyClean))return;
 
   // начисляем только если сервер зафиксировал долю (или клиент — accepted-участник)
-  const myXp=Number.isFinite(+task.my_xp_awarded)&&+task.my_xp_awarded>0
-    ? +task.my_xp_awarded
-    : sharedRewardPerPerson(task);
+  // Начисляем только подтверждённую сервером награду, не вычисляем её самостоятельно.
+  const myXp=Number.isFinite(+task.my_xp_awarded)?+task.my_xp_awarded:0;
   if(myXp<=0)return;
   if(task.my_status&&task.my_status!=='accepted')return;
 
@@ -185,6 +185,7 @@ function renderTaskCard(t){
   const isCompleted=t.status==='completed';
   const isCancelled=t.status==='cancelled';
   const isDone=isCompleted||isCancelled; // завершённые карточки не предлагают удаление/отмену
+  const legacyInvalid=isCompleted&&(active.length<2||invited.length>0||doneN!==active.length);
   const perXp=isCancelled?0:sharedRewardPerPerson(t);
 
   const memHtml=members.map(m=>{
@@ -202,7 +203,9 @@ function renderTaskCard(t){
   if(isCancelled){
     statusLine='<div class="st-status cancelled">'+esc(tr('Отменено'))+'</div>';
   }else if(isCompleted){
-    statusLine='<div class="st-status completed">'+esc(tr('Выполнено'))+' · +'+perXp+' XP</div>';
+    statusLine=legacyInvalid
+      ? '<div class="st-status legacy">Завершено по прежним правилам · ожидает проверки</div>'
+      : '<div class="st-status completed">'+esc(tr('Выполнено'))+' · +'+perXp+' XP</div>';
   }else{
     statusLine='<div class="st-status active">'+esc(tr('{done}/{total} участников выполнили',{done:doneN,total:totalN}))+'</div>';
   }
@@ -228,7 +231,7 @@ function renderTaskCard(t){
     statusLine+
     '<div class="st-prog-wrap"><div class="st-prog-meta"><span>'+pct+'%</span><span class="tiny">'+totalN+(invited.length?' +'+invited.length:'')+'</span></div><div class="st-prog-bar"><i style="width:'+pct+'%"></i></div></div>'+
     '<div class="st-members">'+memHtml+'</div>'+
-    '<div class="st-foot"><div class="st-act">'+actions+'</div></div>'+
+    (actions?'<div class="st-foot"><div class="st-act">'+actions+'</div></div>':'')+
   '</article>';
 }
 
