@@ -9,7 +9,7 @@
 'use strict';
 const $=id=>document.getElementById(id);
 let sb=null,uid=null,started=false,chan=null,pollTm=null,syncTm=null;
-const T={tasks:[],invites:[],activity:[],loading:false,err:null};
+const T={tasks:[],invites:[],activity:[],hidden:new Set(),loading:false,err:null};
 
 const CATS=[
   ['INTELLIGENCE','Интеллект'],
@@ -127,7 +127,11 @@ async function refresh(quiet){
   try{
     const data=await rpc('shared_tasks_overview');
     // Отменённые задания остаются в БД для аудита, но не в активном списке.
-    T.tasks=((data&&data.tasks)||[]).filter(t=>t.status!=='cancelled');
+    // Per-account hiding never removes tasks for other members.
+    const h=await sb.from('shared_task_hidden').select('task_id').eq('user_id',uid);
+    if(h.error)console.warn('shared task hidden',h.error.message);
+    else T.hidden=new Set((h.data||[]).map(x=>String(x.task_id)));
+    T.tasks=((data&&data.tasks)||[]).filter(t=>t.status!=='cancelled'&&!T.hidden.has(String(t.id)));
     T.invites=(data&&data.invites)||[];
     T.activity=(data&&data.activity)||[];
     T.err=null;
@@ -180,11 +184,11 @@ function renderTaskCard(t){
   const invited=members.filter(m=>m.status==='invited');
   const {done:doneN,total:totalN}=doneCounts(t);
   const pct=calcOverallProgress(t);
-  const me=active.find(m=>m.is_me)||active.find(m=>m.user_id===uid);
+  const me=active.find(m=>m.is_me)||active.find(m=>m.user_id===uid)||(t.my_status==='accepted'?{is_me:true,done:t.my_done,progress:t.my_progress}:null);
   const myDone=!!(me&&(me.done||(+me.progress||0)>=100||t.my_done));
   const isCompleted=t.status==='completed';
   const isCancelled=t.status==='cancelled';
-  const isDone=isCompleted||isCancelled; // завершённые карточки не предлагают удаление/отмену
+  const isDone=isCompleted||isCancelled;
   const legacyInvalid=isCompleted&&(active.length<2||invited.length>0||doneN!==active.length);
   const perXp=isCancelled?0:sharedRewardPerPerson(t);
 
@@ -217,11 +221,16 @@ function renderTaskCard(t){
     }else{
       actions+='<button type="button" class="btn small ghost" data-st-act="reset_mine" data-tid="'+esc(t.id)+'">'+esc(tr('Снять отметку'))+'</button>';
     }
-    actions+='<button type="button" class="btn small secondary" data-st-act="invite_more" data-tid="'+esc(t.id)+'">+</button>';
-    actions+='<button type="button" class="btn small ghost danger" data-st-act="cancel_task" data-tid="'+esc(t.id)+'">'+esc(tr('Отменить задание'))+'</button>';
+    if(t.is_creator){
+      actions+='<button type="button" class="btn small secondary" data-st-act="invite_more" data-tid="'+esc(t.id)+'">'+esc(tr('Пригласить'))+'</button>';
+      actions+='<button type="button" class="btn small ghost danger" data-st-act="cancel_task" data-tid="'+esc(t.id)+'">'+esc(tr('Отменить задание'))+'</button>';
+    }
   }
   if(!isDone){
-    actions+='<button type="button" class="btn small ghost" data-st-act="leave" data-tid="'+esc(t.id)+'">'+esc(tr(t.is_creator?'Удалить':'Выйти'))+'</button>';
+    if(t.is_creator)actions+='<button type="button" class="btn small ghost danger" data-st-act="ask_delete" data-tid="'+esc(t.id)+'">'+esc(tr('Удалить'))+'</button>';
+    else actions+='<button type="button" class="btn small ghost" data-st-act="ask_leave" data-tid="'+esc(t.id)+'">'+esc(tr('Выйти'))+'</button>';
+  }else{
+    actions+='<button type="button" class="btn small ghost" data-st-act="hide_task" data-tid="'+esc(t.id)+'">'+esc(tr('Убрать из списка'))+'</button>';
   }
 
   const cardCls='st-card'+(isCompleted?' done':'')+(isCancelled?' cancelled':'');
@@ -399,6 +408,7 @@ async function confirmDone(taskId){
       toast(tr('Прогресс обновлён'));
     }
     await refresh(true);
+    if(document.querySelector('#modalBack.show .st-detail'))await openTask(taskId);
   }catch(e){toast(human(e))}
 }
 
@@ -407,6 +417,7 @@ async function resetDone(taskId){
     await rpc('update_shared_task_progress',{p_task_id:taskId,p_progress:0});
     toast(tr('Отметка снята'));
     await refresh(true);
+    if(document.querySelector('#modalBack.show .st-detail'))await openTask(taskId);
   }catch(e){toast(human(e))}
 }
 
@@ -423,38 +434,45 @@ async function cancelTask(taskId){
 async function openTask(taskId){
   const wanted=String(taskId||'');
   if(!wanted)return;
-  // Сначала открываем главный экран, затем обновляем данные приглашений.
-  if(typeof window.showScreen==='function')window.showScreen('dashboard');
+  if(!started){
+    const modal=$('modal');
+    if(modal){modal.innerHTML='<h3>'+esc(tr('Совместное задание'))+'</h3><p class="sub">'+esc(tr('Войдите в аккаунт, чтобы открыть приглашение'))+'</p>';showModal()}
+    return;
+  }
   await refresh(true);
-
-  // Экран и его анимация могут ещё не завершить отображение после перехода
-  // из уведомлений. Повторяем поиск несколько раз, чтобы не оставить
-  // пользователя просто на главной странице.
-  const locate=()=>{
-    const invite=[...document.querySelectorAll('[data-st-invite-id]')]
-      .find(el=>String(el.dataset.stInviteId)===wanted);
-    const card=[...document.querySelectorAll('[data-st-task-id]')]
-      .find(el=>String(el.dataset.stTaskId)===wanted);
-    return invite||card||document.getElementById('sharedTasksSection');
-  };
-  const focusTarget=()=>{
-    const el=locate();
-    if(!el)return false;
-    el.scrollIntoView({behavior:'smooth',block:'center',inline:'nearest'});
-    const oldOutline=el.style.outline;
-    const oldOffset=el.style.outlineOffset;
-    el.style.outline='2px solid var(--accent, currentColor)';
-    el.style.outlineOffset='4px';
-    setTimeout(()=>{
-      el.style.outline=oldOutline;
-      el.style.outlineOffset=oldOffset;
-    },2600);
-    return true;
-  };
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    if(focusTarget())return;
-    setTimeout(()=>{if(!focusTarget())refresh(true).then(()=>setTimeout(focusTarget,120));},350);
-  }));
+  const invite=T.invites.find(x=>String(x.task_id)===wanted);
+  const task=T.tasks.find(x=>String(x.id)===wanted);
+  const modal=$('modal');if(!modal)return;
+  if(invite){
+    modal.innerHTML='<h3>'+esc(tr('Приглашение в совместное задание'))+'</h3><p class="sub">'+esc(invite.title)+'</p>'+ (invite.description?'<p class="sub">'+esc(invite.description)+'</p>':'')+
+      '<div class="row" style="margin-top:20px;gap:8px;flex-wrap:wrap">'+
+      '<button type="button" class="btn primary" data-st-act="accept_invite" data-tid="'+esc(wanted)+'">'+esc(tr('Принять'))+'</button>'+
+      '<button type="button" class="btn ghost" data-st-act="decline_invite" data-tid="'+esc(wanted)+'">'+esc(tr('Отклонить'))+'</button>'+
+      '<button type="button" class="btn ghost" onclick="closeModal()">'+esc(tr('Закрыть'))+'</button></div>';
+  }else if(task){
+    modal.innerHTML='<h3>'+esc(tr('Совместное задание'))+'</h3><div class="st-detail">'+renderTaskCard(task)+'</div>'+
+      '<div class="row" style="margin-top:14px"><button type="button" class="btn ghost" onclick="closeModal()">'+esc(tr('Закрыть'))+'</button></div>';
+  }else{
+    modal.innerHTML='<h3>'+esc(tr('Совместное задание'))+'</h3><p class="sub">'+esc(tr('Задание больше недоступно или удалено.'))+'</p>'+
+      '<button type="button" class="btn ghost" onclick="closeModal()">'+esc(tr('Закрыть'))+'</button>';
+  }
+  showModal();
+}
+function confirmMemberAction(tid,kind){
+ const task=T.tasks.find(x=>String(x.id)===String(tid));if(!task)return;
+ const isDelete=kind==='delete';
+ $('modal').innerHTML='<h3>'+esc(tr(isDelete?'Удалить совместное задание?':'Выйти из совместного задания?'))+'</h3>'+
+   '<p class="sub">'+esc(task.title)+'</p><p class="tiny">'+esc(tr(isDelete?'Задание будет удалено для всех участников.':'Вы больше не сможете выполнять это задание.'))+'</p>'+
+   '<div class="row" style="margin-top:16px;gap:8px"><button type="button" class="btn ghost" onclick="closeModal()">'+esc(tr('Назад'))+'</button>'+
+   '<button type="button" class="btn danger" data-st-act="leave_confirm" data-tid="'+esc(tid)+'">'+esc(tr(isDelete?'Удалить':'Выйти'))+'</button></div>';
+ showModal();
+}
+async function hideTask(tid){
+ const task=T.tasks.find(x=>String(x.id)===String(tid));if(!task||task.status==='active')return;
+ const r=await sb.from('shared_task_hidden').upsert({user_id:uid,task_id:tid},{onConflict:'user_id,task_id'});
+ if(r.error)throw r.error;
+ T.hidden.add(String(tid));T.tasks=T.tasks.filter(t=>String(t.id)!==String(tid));
+ closeModal();renderContainer();toast(tr('Задание убрано из списка'));
 }
 
 document.addEventListener('click',async e=>{
@@ -463,6 +481,9 @@ document.addEventListener('click',async e=>{
   const act=btn.dataset.stAct,tid=btn.dataset.tid,fid=btn.dataset.fid;
   try{
     if(act==='open_task')return openTask(tid);
+    if(act==='ask_delete')return confirmMemberAction(tid,'delete');
+    if(act==='ask_leave')return confirmMemberAction(tid,'leave');
+    if(act==='hide_task')return hideTask(tid);
     if(act==='open_create')return openCreateModal();
     if(act==='open_create_for'){closeModal();return openCreateModal(fid)}
     if(act==='invite_more')return openInviteMoreModal(tid);
@@ -472,11 +493,14 @@ document.addEventListener('click',async e=>{
     if(act==='confirm_cancel')return cancelTask(tid);
     if(act==='accept_invite'){
       await rpc('respond_shared_task_invite',{p_task_id:tid,p_accept:true});
+      closeModal();
       toast(tr('Вы присоединились к совместному заданию'));
       await refresh(true);
       if(FS().refreshUnread)FS().refreshUnread();
+      return openTask(tid);
     }else if(act==='decline_invite'){
       await rpc('respond_shared_task_invite',{p_task_id:tid,p_accept:false});
+      closeModal();
       toast(tr('Приглашение отклонено'));
       await refresh(true);
       if(FS().refreshUnread)FS().refreshUnread();
@@ -485,7 +509,8 @@ document.addEventListener('click',async e=>{
       await rpc('invite_to_shared_task',{p_task_id:tid,p_friend_ids:[fid]});
       toast(tr('Приглашение отправлено'));
       await refresh(true);
-    }else if(act==='leave'){
+    }else if(act==='leave_confirm'){
+      closeModal();
       await rpc('leave_shared_task',{p_task_id:tid});
       toast(tr('Задание удалено из вашего списка'));
       await refresh(true);
