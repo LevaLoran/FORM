@@ -138,7 +138,7 @@ async function fileToCover(f,w,h){
 }
 
 /* ---------- рамки аватара ---------- */
-const FRAMES=[['none','Без рамки',0],['ring','Кольцо',0],['dots','Точки',2],['double','Двойная',4],['square','Квадрат',6],['orbit','Орбита',8],['halo','Ореол',10],['aurora','Аврора','x'],['crown','Корона','x'],['void','Пустота','x']];
+const FRAMES=[['none','Без рамки',0],['ring','Кольцо',0],['dots','Точки',2],['double','Двойная',4],['orbit','Орбита',8],['halo','Ореол',10],['aurora','Аврора','x'],['crown','Корона','x'],['void','Пустота','x']];
 const myRank=()=>rankIndex(state.xp);
 const isOwner=()=>!!(S.me&&S.me.role==='owner'); // только подсказка для интерфейса: права проверяет сервер
 const frameOk=f=>{
@@ -161,7 +161,7 @@ const letter=n=>(String(n||'?').trim().charAt(0)||'?').toUpperCase();
 function avHTML(u,size,o){
   o=o||{};
   const img=safeImg(o.big?(u.avatar_anim||u.avatar||u.avatar_thumb):(u.avatar_thumb||u.avatar));
-  const fr=FRAMES.some(f=>f[0]===u.frame)?u.frame:'none',name=dispName(u);
+  const fr=FRAMES.some(f=>f[0]===u.frame)?u.frame:'none',name=dispName(u); // old square-frame values display as no frame
   const dot=o.noDot||u.online==null?'':'<i class="odot'+(u.online?' on':'')+'" aria-hidden="true"></i>';
   return '<span class="pav f-'+fr+'" style="--s:'+size+'px;--pc:'+hex(u.color)+'"><span class="av" style="--s:'+size+'px">'+
     (img?'<img alt="" decoding="async" src="'+img+'">':'<svg viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" style="fill:var(--bg2)"/><text x="24" y="32" text-anchor="middle" font-size="22" font-family="ui-monospace,Menlo,monospace" fill="currentColor">'+esc(letter(name))+'</text></svg>')+
@@ -554,12 +554,19 @@ async function setPriv(patch){
 /* ---------- редактор профиля: вкладка «Профиль», все настройки в одном месте ---------- */
 const COLORS=['#111111','#3a3a42','#6b6b73','#a3a3ab','#ffffff','#2f5bea','#4f7bff','#0b8fa6','#00a3a3','#00677f','#1f9d63','#3d8f2f','#7fb800','#c2b500','#c77b00','#ffa94d','#e05a3a','#d93b3b','#8a3a1f','#c2399a','#d1478a','#ff6b9d','#8e44ad','#6b5be2','#5b2a86','#2a2a8a','#4dabf7','#69db7c','#b197fc','#006d4a'];
 const BGS=[['none','Обычный'],['tint','Оттенок цвета'],['image','Моё изображение']];
+/* Existing profile color + color2 fields store presets; no database migration needed. */
+const COVER_PRESETS=[
+ ['Graphite','#121826','#64748b'],['Violet','#27163f','#8758c5'],
+ ['Ocean','#073447','#249bc0'],['Aurora','#103b38','#37ae91'],
+ ['Dusk','#38254b','#ad648e'],['Ember','#51232d','#dd7f54'],
+ ['Mono','#151515','#d3d3d3'],['Slate','#253349','#839ab7']
+];
 const GIF_MAX={avatar:450000,banner:650000,bg:650000}; // байты файла: в базу GIF кладётся как есть (с анимацией)
 let prevTm=null;
 function draftFrom(m){
   const th=m.theme||{};
   return {display:myName(),username:m.username,bio:m.bio||'',status:m.status||'',links:(m.links||[]).map(l=>({label:l.label||'',url:l.url||''})),
-    color:th.color||'#2f5bea',color2:th.color2||'',banner:th.banner||'color',deco:th.deco||'dots',bg:th.bg||'none',frame:th.frame||'none',
+    color:th.color||'#2f5bea',color2:th.color2||'',banner:th.banner||'color',deco:th.deco||'dots',bg:th.bg||'none',frame:th.frame==='square'?'none':th.frame||'none',
     banner_image:m.banner_image||null,bg_image:m.bg_image||null,avatar_anim:m.avatar_anim||null,pinned:(m.pinned||[]).slice(),hide:((m.privacy||{}).hide||[]).slice(),
     bannerCh:false,bgCh:false,avCh:false,avFirst:null,dirty:false};
 }
@@ -609,6 +616,11 @@ function drawEditorParts(){
   if(ag)ag.innerHTML='<button type="button" class="btn secondary small" onclick="openAvatar()">'+esc(i18('Изменить фото'))+'</button>'+fileBtn('peAvGif','GIF-аватар','image/gif')+(D.avatar_anim?'<button type="button" class="btn ghost small" data-del="avgif">'+esc(i18('Убрать GIF'))+'</button>':'');
   const bi=$('peBanner');
   if(bi)bi.innerHTML=segHTML('banner',[['color','Цвет'],['image','Изображение или GIF']],D.banner)+(D.banner==='image'?'<div class="row" style="gap:8px;margin-top:8px;justify-content:flex-start">'+fileBtn('peBannerFile',D.banner_image?'Заменить':'Загрузить','image/*')+(D.banner_image?'<button type="button" class="btn ghost small" data-del="banner">'+esc(i18('Убрать'))+'</button>':'')+'</div>':'');
+  /* Visible banner designs replace the removed binary/ASCII decorations. */
+  const gradients=$('peGradientPresets');
+  if(gradients)gradients.innerHTML=COVER_PRESETS.map(p=>
+    '<button type="button" class="cover-preset'+(D.banner==='color'&&D.color.toLowerCase()===p[1]&&String(D.color2||'').toLowerCase()===p[2]?' on':'')+'" data-gradient="'+p[0]+'" aria-pressed="'+(D.banner==='color'&&D.color.toLowerCase()===p[1]&&String(D.color2||'').toLowerCase()===p[2])+'" aria-label="'+p[0]+'" style="--g1:'+p[1]+';--g2:'+p[2]+'"><i aria-hidden="true"></i><span>'+p[0]+'</span></button>'
+  ).join('');
   const bg=$('peBg');
   if(bg)bg.innerHTML=segHTML('bg',BGS,D.bg)+(D.bg==='image'?'<div class="row" style="gap:8px;margin-top:8px;justify-content:flex-start">'+fileBtn('peBgFile',D.bg_image?'Заменить':'Загрузить','image/*')+(D.bg_image?'<button type="button" class="btn ghost small" data-del="bg">'+esc(i18('Убрать'))+'</button>':'')+'</div>':'');
   const pn=$('pePins');
@@ -633,6 +645,7 @@ function renderEditor(){
    '<div class="row" id="peAvBtns" style="justify-content:flex-start;gap:8px;flex-wrap:wrap"></div><div class="tiny hint">'+esc(i18('GIF: до 450 КБ для аватара, до 650 КБ для баннера и фона.'))+'</div>'+
    '<div class="tiny" style="margin:16px 0 8px">'+esc(i18('Рамка аватара'))+'</div><div class="frames" id="peFrames"></div>'+
    '<div class="tiny" style="margin:16px 0 8px">'+esc(i18('Баннер'))+'</div><div id="peBanner"></div>'+
+   '<div class="tiny" style="margin:12px 0 8px">'+esc(i18('Готовые градиенты'))+'</div><div class="cover-presets" id="peGradientPresets"></div>'+
    asc('02 · Информация')+
    '<label for="peName" style="margin-top:0">'+esc(i18('Отображаемое имя'))+'</label><input class="field" id="peName" maxlength="18" autocomplete="off" spellcheck="false" value="'+esc(D.display)+'" placeholder="'+esc(i18('ПОЛЬЗОВАТЕЛЬ'))+'">'+
    '<label for="peUser">'+esc(i18('Имя пользователя'))+'</label><div class="atfield"><span>@</span><input class="field" id="peUser" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false" value="'+esc(D.username)+'"'+(left>0?' disabled':'')+'></div><div class="tiny hint">'+esc(left>0?i18('Следующая смена имени пользователя через {n} дн.',{n:left}):i18('3–20 символов: латиница, цифры, _ и точка. Менять можно раз в 7 дней.'))+'</div>'+
@@ -798,6 +811,11 @@ function onClick(e){
   const sw2=t.closest('.swatch[data-c2]');
   if(sw2&&S.D){S.D.color2=sw2.dataset.c2;dirty();drawEditorParts();return}
   if(t.closest('#peReset')&&S.me){S.D=draftFrom(S.me);renderEditor();return}
+  const preset=t.closest('.cover-preset[data-gradient]');
+  if(preset&&S.D){const colors=COVER_PRESETS.find(p=>p[0]===preset.dataset.gradient);
+    if(colors){S.D.banner='color';S.D.color=colors[1];S.D.color2=colors[2];dirty();drawEditorParts();drawPrev()}
+    return;
+  }
   const fo=t.closest('.frameopt[data-f]');
   if(fo&&S.D&&!fo.disabled){S.D.frame=fo.dataset.f;dirty();drawEditorParts();return}
   const pin=t.closest('[data-pin]');

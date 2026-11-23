@@ -1,90 +1,94 @@
-/* FORM AI BETA 1.1.0 — composited SVG rig and accessible assistant UI. */
+/* FORM 1.1.1 / Formik — compact mobile dock, accessible local guide. */
 :root{--fai-glow:var(--acc,#fff)}
 .fai-root{position:fixed;inset:0;z-index:18;pointer-events:none;font-family:var(--sans,system-ui);color:var(--ink)}
 html:not([data-auth="in"]) .fai-root{display:none}
-.fai-launch{position:absolute;right:18px;bottom:calc(94px + env(safe-area-inset-bottom,0px));width:74px;height:74px;display:grid;place-items:center;border:1px solid var(--line);background:color-mix(in srgb,var(--surf) 94%,transparent);color:var(--fai-glow);border-radius:21px;box-shadow:0 12px 32px #0004;pointer-events:auto;cursor:pointer;transition:transform .2s,border-color .2s}
-.fai-launch:hover{transform:translateY(-3px);border-color:var(--fai-glow)}
-.fai-launch:focus-visible,.fai-close:focus-visible,.fai-quick button:focus-visible,.fai-form button:focus-visible{outline:2px solid var(--fai-glow);outline-offset:3px}
-.fai-launch[hidden]{display:none}
-.fai-launch .fai-character{width:66px;height:66px;overflow:hidden}
-.fai-betatab{position:absolute;bottom:3px;right:-3px;border-radius:5px;background:var(--ink);color:var(--bg);font:700 8px var(--mono,monospace);letter-spacing:.07em;padding:3px 4px}
-.fai-panel{position:absolute;right:18px;bottom:calc(94px + env(safe-area-inset-bottom,0px));height:min(615px,calc(100dvh - 170px));width:min(392px,calc(100vw - 24px));display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--line);border-radius:22px;background:var(--surf);box-shadow:0 20px 65px #0007;pointer-events:auto}
-.fai-panel[hidden]{display:none}
-.fai-headbar{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px 0}
-.fai-kicker{color:var(--mut);font:700 10px var(--mono,monospace);letter-spacing:.13em}
-.fai-heading{font-size:19px;font-weight:800;line-height:1.2;margin:3px 0 0;letter-spacing:-.04em}
-.fai-heading b{font:700 9px var(--mono,monospace);letter-spacing:.04em;background:var(--bg2);border:1px solid var(--line);padding:4px 5px;border-radius:5px;vertical-align:middle;margin-left:6px}
+.fai-launch{position:absolute;right:18px;bottom:calc(96px + env(safe-area-inset-bottom,0px));width:64px;height:64px;display:grid;place-items:center;border:1px solid var(--line);background:var(--surf);color:var(--fai-glow);border-radius:18px;box-shadow:0 8px 30px #0004;pointer-events:auto;cursor:pointer;transition:border-color .2s,box-shadow .2s}
+.fai-launch[hidden],.fai-panel[hidden],.fai-scrim[hidden]{display:none!important}
+.fai-launch:focus-visible,.fai-close:focus-visible,.fai-questions button:focus-visible,.fai-actions button:focus-visible,.fai-add:focus-visible{outline:2px solid var(--fai-glow);outline-offset:2px}
+.fai-launch .fai-character{display:block;width:57px;height:57px;overflow:hidden}
+.fai-betatab{position:absolute;bottom:3px;right:2px;padding:2px 4px;border-radius:5px;background:var(--ink);color:var(--bg);font:700 8px var(--mono,monospace);letter-spacing:.03em}
+.fai-scrim{position:absolute;inset:0;background:rgba(0,0,0,.48);pointer-events:auto}
+.fai-panel{position:absolute;right:18px;bottom:calc(96px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;overflow:hidden;width:min(390px,calc(100vw - 20px));max-height:calc(100dvh - 52px);height:min(660px,calc(100dvh - 120px));border:1px solid var(--line);border-radius:22px;background:var(--surf);box-shadow:0 20px 65px #0009;pointer-events:auto}
+.fai-headbar{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 17px 0;margin:0;min-height:48px}
+.fai-kicker{color:var(--mut);font:600 10px var(--mono,monospace);letter-spacing:.05em}
+.fai-heading{font-size:21px;font-weight:800;letter-spacing:-.04em;line-height:1.2;margin-top:4px}
 .fai-close{height:34px;width:34px;background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:10px;cursor:pointer;font-size:22px}
-.fai-stage{height:184px;flex:none;position:relative;display:flex;align-items:center;justify-content:center;margin:2px 14px 0;background:radial-gradient(ellipse at 50% 65%,color-mix(in srgb,var(--fai-glow) 15%,transparent),transparent 68%);border-radius:16px}
-.fai-stage .fai-character{height:178px;width:178px}
-.fai-statetext{position:absolute;bottom:6px;left:13px;font:10px var(--mono,monospace);color:var(--mut);letter-spacing:.08em}
-.fai-state-dot{position:absolute;right:13px;bottom:9px;width:7px;height:7px;border-radius:100%;background:var(--fai-glow);box-shadow:0 0 12px var(--fai-glow)}
-.fai-intro{font-size:12px;line-height:1.5;color:var(--mut);margin:1px 17px 10px}
-.fai-quick{display:flex;flex-wrap:wrap;gap:6px;margin:0 15px 10px}
-.fai-quick button{font:600 11px var(--sans,system-ui);padding:7px 10px;border:1px solid var(--line);border-radius:100px;background:var(--bg2);color:var(--ink);cursor:pointer}
-.fai-quick button:hover{border-color:var(--fai-glow)}
-.fai-log{display:flex;flex-direction:column;gap:8px;min-height:0;flex:1;overflow:auto;padding:10px 14px 16px;border-top:1px solid var(--line);overscroll-behavior:contain}
-.fai-message{max-width:93%;padding:10px 12px;border:1px solid var(--line);border-radius:13px 13px 13px 3px;background:var(--bg2);font-size:12px;line-height:1.55;overflow-wrap:anywhere;white-space:pre-wrap}
-.fai-message.fai-user{align-self:flex-end;border-radius:13px 13px 3px 13px;background:var(--ink);color:var(--bg);border-color:transparent}
-.fai-message.fai-bot{align-self:flex-start}
-.fai-suggestion{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-top:9px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surf)}
-.fai-suggestion span{font:10px var(--mono,monospace);color:var(--mut)}
-.fai-suggestion strong{font-size:12px}
-.fai-suggestion button{border:1px solid var(--fai-glow);background:transparent;color:var(--ink);padding:6px 10px;border-radius:7px;cursor:pointer;font-size:11px}
-.fai-form{display:flex;gap:8px;border-top:1px solid var(--line);padding:11px 13px calc(11px + env(safe-area-inset-bottom,0px));flex:none}
-.fai-form input{min-width:0;flex:1;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--bg2);color:var(--ink);font-size:13px;outline:none}
-.fai-form input:focus{border-color:var(--fai-glow)}
-.fai-form button{border:0;border-radius:12px;background:var(--ink);color:var(--bg);font-size:18px;min-width:43px;cursor:pointer}
-.fai-foot{font:10px var(--mono,monospace);color:var(--mut);padding:0 14px 10px;text-align:center}
-/* The character is a true layered vector rig: independently animated head, cape,
-   body, eyes, halo and orbit. No fixed frame raster, no JS animation loop. */
-.fai-character{--fai-light:var(--fai-glow);color:var(--fai-light);display:block;position:relative;isolation:isolate}
-.fai-svg{width:100%;height:100%;overflow:visible;filter:drop-shadow(0 3px 7px #0005)}
-.fai-svg .fai-float,.fai-svg .fai-head,.fai-svg .fai-tail-left,.fai-svg .fai-tail-right,.fai-svg .fai-body,.fai-svg .fai-orbit-front,.fai-svg .fai-orbit-back,.fai-svg .fai-stars,.fai-svg .fai-thought,.fai-svg .fai-celebrate,.fai-svg .fai-eyes{transform-box:fill-box;transform-origin:center;will-change:transform}
-.fai-svg .fai-eye-normal,.fai-svg .fai-eye-happy,.fai-svg .fai-eye-thinking,.fai-svg .fai-eye-sleep,.fai-svg .fai-eye-talk{transition:opacity .25s ease}
-.fai-eye-happy,.fai-eye-thinking,.fai-eye-sleep,.fai-eye-talk,.fai-thought,.fai-celebrate{opacity:0}
+.fai-stage{height:142px;flex:none;position:relative;display:grid;place-items:center;margin:3px 14px 0;border-radius:16px;background:radial-gradient(ellipse at 50% 66%,color-mix(in srgb,var(--fai-glow) 14%,transparent),transparent 68%)}
+.fai-stage .fai-character{height:132px;width:132px}
+.fai-statetext{position:absolute;bottom:2px;left:10px;font:10px var(--mono,monospace);color:var(--mut);letter-spacing:.04em}
+.fai-intro{font-size:13px;line-height:1.5;margin:4px 17px 11px;font-weight:600}
+.fai-scroll{overflow:auto;min-height:0;flex:1;padding:0 16px 14px;overscroll-behavior:contain}
+.fai-section-title{font:700 10px var(--mono,monospace);letter-spacing:.08em;color:var(--mut);margin:9px 0 7px;text-transform:uppercase}
+.fai-questions{display:flex;gap:6px;flex-wrap:wrap}
+.fai-questions button{font:600 12px var(--sans,system-ui);border:1px solid var(--line);border-radius:999px;padding:9px 11px;background:var(--bg2);color:var(--ink);cursor:pointer;text-align:left}
+.fai-questions button:active{transform:scale(.98)}
+.fai-answer{font-size:12px;line-height:1.55;white-space:pre-wrap;background:var(--bg2);border-left:2px solid var(--fai-glow);border-radius:0 8px 8px 0;padding:10px 11px;margin:12px 0}
+.fai-results{display:grid;gap:7px}
+.fai-suggestion{display:grid;grid-template-columns:1fr auto;gap:3px 8px;align-items:center;padding:10px 11px;border:1px solid var(--line);background:var(--bg2);border-radius:11px}
+.fai-suggestion span{font:10px var(--mono,monospace);color:var(--mut);grid-column:1 / -1}
+.fai-suggestion strong{font-size:12px;font-weight:700;min-width:0;overflow-wrap:anywhere}
+.fai-suggestion button{max-width:145px;border:1px solid var(--line);background:var(--surf);color:var(--ink);border-radius:8px;padding:7px;font:600 11px var(--sans,system-ui);cursor:pointer}
+.fai-sub,.fai-progress{font:11px var(--mono,monospace);color:var(--mut);margin:3px 0}
+.fai-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:none;padding:10px 14px;border-top:1px solid var(--line)}
+.fai-actions button{font-size:12px;font-weight:700;min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--bg2);color:var(--ink);cursor:pointer}
+.fai-actions button:last-child{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.fai-foot{text-align:center;color:var(--mut);font:10px var(--mono,monospace);padding:0 13px 10px}
+/* Head and eyes are separate vector parts. No transforms on eyes: avoids SVG transform-box jumps on Android. */
+.fai-character{color:var(--fai-glow);display:block;position:relative;isolation:isolate}
+.fai-svg{display:block;width:100%;height:100%;overflow:visible;filter:drop-shadow(0 3px 7px #0005)}
+.fai-svg .fai-float,.fai-svg .fai-head,.fai-svg .fai-tail-left,.fai-svg .fai-tail-right,.fai-svg .fai-body,.fai-svg .fai-orbit-front,.fai-svg .fai-orbit-back,.fai-svg .fai-stars,.fai-svg .fai-thought,.fai-svg .fai-celebrate{transform-box:fill-box;transform-origin:center}
+.fai-svg .fai-eye-normal,.fai-svg .fai-eye-blink,.fai-svg .fai-eye-happy,.fai-svg .fai-eye-thinking,.fai-svg .fai-eye-sleep,.fai-svg .fai-eye-talk,.fai-svg .fai-eye-surprised{transition:opacity .14s ease}
+.fai-eye-blink,.fai-eye-happy,.fai-eye-thinking,.fai-eye-sleep,.fai-eye-talk,.fai-eye-surprised,.fai-thought,.fai-celebrate{opacity:0}
 .fai-eye-normal{opacity:1}
 .fai-svg .fai-float{animation:fai-float 3.9s ease-in-out infinite}
 .fai-svg .fai-head{animation:fai-head 4.8s ease-in-out infinite}
 .fai-svg .fai-tail-left{animation:fai-flap-left 2.8s ease-in-out infinite}
 .fai-svg .fai-tail-right{animation:fai-flap-right 3.2s ease-in-out infinite}
 .fai-svg .fai-orbit-front,.fai-svg .fai-orbit-back{animation:fai-orbit 7s ease-in-out infinite}
-.fai-svg .fai-eye-normal{animation:fai-blink 7s linear infinite}
+.fai-svg .fai-eye-normal{animation:fai-eye-open 7s steps(1) infinite}
+.fai-svg .fai-eye-blink{animation:fai-eye-closed 7s steps(1) infinite}
 .fai-svg .fai-stars{animation:fai-spark 3.5s ease-in-out infinite}
-.fai-character[data-state="happy"] .fai-eye-normal,.fai-character[data-state="celebration"] .fai-eye-normal,.fai-character[data-state="thinking"] .fai-eye-normal,.fai-character[data-state="talking"] .fai-eye-normal,.fai-character[data-state="sleep"] .fai-eye-normal{opacity:0;animation:none}
-.fai-character[data-state="happy"] .fai-eye-happy,.fai-character[data-state="celebration"] .fai-eye-happy{opacity:1}
+.fai-character:is([data-state="happy"],[data-state="celebration"],[data-state="thinking"],[data-state="talking"],[data-state="sleep"],[data-state="surprised"]) .fai-eye-normal,
+.fai-character:is([data-state="happy"],[data-state="celebration"],[data-state="thinking"],[data-state="talking"],[data-state="sleep"],[data-state="surprised"]) .fai-eye-blink{opacity:0;animation:none}
+.fai-character:is([data-state="happy"],[data-state="celebration"]) .fai-eye-happy{opacity:1}
 .fai-character[data-state="thinking"] .fai-eye-thinking{opacity:1}
 .fai-character[data-state="talking"] .fai-eye-talk{opacity:1}
 .fai-character[data-state="sleep"] .fai-eye-sleep{opacity:1}
+.fai-character[data-state="surprised"] .fai-eye-surprised{opacity:1}
 .fai-character[data-state="thinking"] .fai-thought{opacity:1;animation:fai-spark 1.2s ease-in-out infinite}
-.fai-character[data-state="celebration"] .fai-celebrate,.fai-character[data-state="happy"] .fai-celebrate{opacity:1;animation:fai-spark .8s ease-in-out infinite}
-.fai-character[data-state="surprised"] .fai-eye-normal{animation:none}
-.fai-character[data-state="surprised"] .fai-eyes{transform:scale(1.26)}
+.fai-character:is([data-state="celebration"],[data-state="happy"]) .fai-celebrate{opacity:1;animation:fai-spark .8s ease-in-out infinite}
 .fai-character[data-state="thinking"] .fai-head{animation:fai-think 2.4s ease-in-out infinite}
 .fai-character[data-state="talking"] .fai-head{animation:fai-talk .46s ease-in-out infinite}
 .fai-character[data-state="sleep"] .fai-float{animation:fai-sleep 5.4s ease-in-out infinite}
-.fai-character[data-state="sleep"] .fai-stars,.fai-character[data-state="sleep"] .fai-orbit-front,.fai-character[data-state="sleep"] .fai-orbit-back{opacity:.18}
-.fai-character[data-state="happy"] .fai-float,.fai-character[data-state="celebration"] .fai-float{animation:fai-cheer .75s ease-in-out 2}
+.fai-character[data-state="sleep"] :is(.fai-stars,.fai-orbit-front,.fai-orbit-back){opacity:.18}
+.fai-character:is([data-state="happy"],[data-state="celebration"]) .fai-float{animation:fai-cheer .75s ease-in-out 2}
 .fai-character[data-state="surprised"] .fai-float{animation:fai-jolt .45s ease-out 1}
-.fai-character[data-state="celebration"] .fai-orbit-front,.fai-character[data-state="celebration"] .fai-orbit-back{animation-duration:1s}
-.fai-character.is-paused *,html[data-anim="off"] .fai-character *,html[data-anim="off"] .fai-panel{animation-play-state:paused!important;animation:none!important;transition:none!important;will-change:auto!important}
+.fai-character[data-state="celebration"] :is(.fai-orbit-front,.fai-orbit-back){animation-duration:1s}
+.fai-character.is-paused *,html[data-anim="off"] .fai-character *{animation:none!important;transition:none!important;will-change:auto!important}
 @keyframes fai-float{0%,100%{transform:translateY(2px) rotate(-1deg)}50%{transform:translateY(-7px) rotate(1deg)}}
-@keyframes fai-head{0%,100%{transform:rotate(-2deg) translateY(0)}50%{transform:rotate(2deg) translateY(-2px)}}
+@keyframes fai-head{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg) translateY(-2px)}}
 @keyframes fai-flap-left{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(9deg) translateY(3px)}}
 @keyframes fai-flap-right{0%,100%{transform:rotate(6deg)}50%{transform:rotate(-9deg) translateY(-2px)}}
 @keyframes fai-orbit{0%,100%{transform:rotate(-6deg) scaleX(1)}50%{transform:rotate(6deg) scaleX(.91)}}
-@keyframes fai-blink{0%,35%,36%,38%,67%,69%,100%{transform:scaleY(1)}36.5%,68%{transform:scaleY(.08)}}
+@keyframes fai-eye-open{0%,36%,38%,68%,70%,100%{opacity:1}36.5%,69%{opacity:0}}
+@keyframes fai-eye-closed{0%,36%,38%,68%,70%,100%{opacity:0}36.5%,69%{opacity:1}}
 @keyframes fai-spark{0%,100%{opacity:.17;transform:scale(.75)}50%{opacity:1;transform:scale(1.12)}}
 @keyframes fai-think{0%,100%{transform:rotate(6deg)}50%{transform:rotate(12deg) translateY(-3px)}}
 @keyframes fai-talk{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
 @keyframes fai-sleep{0%,100%{transform:translateY(3px) rotate(-3deg)}50%{transform:translateY(-2px) rotate(3deg)}}
 @keyframes fai-cheer{0%,100%{transform:translateY(0) scale(1)}38%{transform:translateY(-14px) scale(1.06)}75%{transform:translateY(3px) scale(.99)}}
 @keyframes fai-jolt{0%{transform:translateY(0) scale(1)}45%{transform:translateY(7px) scale(.91)}100%{transform:translateY(0) scale(1)}}
+@media(max-width:600px){
+ .fai-launch{position:absolute;right:0;left:auto;top:47dvh;bottom:auto;width:42px;height:54px;box-sizing:border-box;border-radius:13px 0 0 13px;touch-action:none;box-shadow:0 4px 16px #0007}
+ .fai-launch .fai-character{width:38px;height:45px}
+ .fai-betatab{font-size:6px;bottom:1px;right:1px;padding:1px 2px}
+ .fai-panel{right:0;left:0;bottom:0;top:auto;width:100%;height:min(75dvh,660px);max-height:calc(100dvh - 55px);border-radius:22px 22px 0 0;padding-bottom:env(safe-area-inset-bottom,0px)}
+ .fai-stage{height:110px}.fai-stage .fai-character{width:106px;height:106px}
+ .fai-intro{margin-bottom:5px}
+ .fai-scroll{padding-bottom:8px}
+}
 @media(min-width:900px){.fai-launch{bottom:108px;right:24px}.fai-panel{bottom:102px;right:24px}}
-@media(max-width:440px){.fai-panel{right:8px;width:calc(100vw - 16px);bottom:calc(84px + env(safe-area-inset-bottom,0px));height:min(650px,calc(100dvh - 120px));border-radius:19px}.fai-launch{right:12px;bottom:calc(88px + env(safe-area-inset-bottom,0px))}.fai-stage{height:155px}.fai-stage .fai-character{width:151px;height:151px}.fai-intro{margin-bottom:6px}}
 @media(prefers-reduced-motion:reduce){.fai-character *{animation:none!important;transition:none!important;will-change:auto!important}.fai-panel{animation:none!important}}
-
-/* Plain gradient or user image only; zero visual character overlays. */
+/* Cover only: remove historical ASCII/text effects, preserve user-selected gradient and image. */
 .pc-banner::before,.pc-banner::after{content:none!important;background:none!important;display:none!important}
-
 .fai-character[data-state="sleep"] .fai-eye-halo{opacity:.07}

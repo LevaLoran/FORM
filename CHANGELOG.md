@@ -1,3 +1,14 @@
+## FORM 1.1.1 — Formik & profile customization fixes (2026-11-23)
+
+- Replaced FORM AI BETA chat with Formik, a non-generative local guide driven by tappable questions.
+- Contextual suggestions use local daily missions, completed missions, and category preferences; creation still uses the existing task editor.
+- Fully localized Formik interface and suggestions for all twelve FORM languages; refreshes on language change.
+- Replaced unstable eye scaling with frame-independent opacity blink and separate closed-eye paths.
+- Mobile edge dock shrinks to 42 px and can be dragged vertically; popup is dismissible and optimized for narrow screens.
+- Restored 8 selectable banner gradient designs using existing `color` / `color2` fields, preserving GIF and images.
+- Improved frame visibility; retired square frame from the chooser without deleting user data.
+- PWA cache version `form-v1-1-1-formik`. No Supabase changes required.
+
 ## 1.0.2 (2026-11-23)
 - Radial RPG skills overview, eight tiers per existing category.
 - Shared-task notification deep links and member controls.
