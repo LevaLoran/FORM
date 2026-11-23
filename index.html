@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#ffffff">
   <meta name="application-name" content="FORM">
   <meta name="msapplication-TileColor" content="#ffffff">
-  <script>try{var d=document.documentElement,t=localStorage.getItem("formTheme");if(t!=="dark"&&t!=="light")t=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";d.dataset.theme=t;if(sessionStorage.getItem("formSplash"))d.classList.add("nosplash");else sessionStorage.setItem("formSplash","1")}catch(e){}</script>
+  <script>try{var d=document.documentElement,t=localStorage.getItem("formTheme");if(!["light","dark","monochrome","midnight","amethyst","forest","ocean","sunset"].includes(t))t=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";d.dataset.theme=t;if(sessionStorage.getItem("formSplash"))d.classList.add("nosplash");else sessionStorage.setItem("formSplash","1")}catch(e){}</script>
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -22,6 +22,7 @@
   <link rel="stylesheet" href="social.css">
   <link rel="stylesheet" href="ui.css">
   <link rel="stylesheet" href="shared-tasks.css">
+  <link rel="stylesheet" href="themes.css">
 </head>
 <body>
 <div id="splash" aria-hidden="true"><svg viewBox="0 0 512 512"><circle class="r" cx="256" cy="256" r="158"/><circle class="d" style="--i:0" cx="256.0" cy="98.0" r="16"/><circle class="d" style="--i:1" cx="335.0" cy="119.2" r="16"/><circle class="d" style="--i:2" cx="392.8" cy="177.0" r="16"/><circle class="d" style="--i:3" cx="414.0" cy="256.0" r="16"/><circle class="d" style="--i:4" cx="392.8" cy="335.0" r="16"/><circle class="d" style="--i:5" cx="335.0" cy="392.8" r="16"/><circle class="d" style="--i:6" cx="256.0" cy="414.0" r="16"/><circle class="d" style="--i:7" cx="177.0" cy="392.8" r="16"/><circle class="d" style="--i:8" cx="119.2" cy="335.0" r="16"/><circle class="d" style="--i:9" cx="98.0" cy="256.0" r="16"/><circle class="d" style="--i:10" cx="119.2" cy="177.0" r="16"/><circle class="d" style="--i:11" cx="177.0" cy="119.2" r="16"/><circle class="d" style="--i:12" cx="303.5" cy="173.7" r="13"/><circle class="d" style="--i:13" cx="351.0" cy="256.0" r="13"/><circle class="d" style="--i:14" cx="303.5" cy="338.3" r="13"/><circle class="d" style="--i:15" cx="208.5" cy="338.3" r="13"/><circle class="d" style="--i:16" cx="161.0" cy="256.0" r="13"/><circle class="d" style="--i:17" cx="208.5" cy="173.7" r="13"/><circle class="d c" style="--i:18" cx="256" cy="256" r="26"/></svg><div class="sp-word"><span style="--i:0">F</span><span style="--i:1">O</span><span style="--i:2">R</span><span style="--i:3">M</span><span style="--i:4" class="p">.</span></div><div class="sp-tag">SHAPE YOURSELF</div></div>
@@ -151,9 +152,16 @@
       <div class="acc"><div class="srow"><div><b>Профиль</b><div class="tiny">Аватар, баннер, о себе, ссылки, приватность</div></div><button class="btn small secondary" type="button" onclick="showScreen('profile')">Открыть</button></div></div>
       <div class="sectiontitle"><span>Внешний вид</span></div>
       <div class="acc">
-        <div class="srow"><div><b>Тема</b><div class="tiny">Оформление интерфейса</div></div><div class="seg" id="segTheme" role="radiogroup"><button type="button" role="radio" data-v="light">Светлая</button><button type="button" role="radio" data-v="dark">Тёмная</button></div></div>
+        <div class="srow"><div><b>Базовый режим</b><div class="tiny">Классический FORM</div></div><div class="seg" id="segTheme" role="radiogroup"><button type="button" role="radio" data-v="light">Светлая</button><button type="button" role="radio" data-v="dark">Тёмная</button></div></div>
         <div class="srow"><div><b>Анимации</b><div class="tiny">Плавные переходы и эффекты наград</div></div><div class="seg" id="segAnim" role="radiogroup"><button type="button" role="radio" data-v="on">Включены</button><button type="button" role="radio" data-v="off">Выключены</button></div></div>
         <div class="srow"><div><b>Звук</b><div class="tiny">Победный звук при выполнении задачи</div></div><div class="seg" id="segSound" role="radiogroup"><button type="button" role="radio" data-v="on">Включён</button><button type="button" role="radio" data-v="off">Выключен</button></div></div>
+      </div>
+      <div class="sectiontitle"><span>Тема оформления</span></div>
+      <p class="sub">Выберите цветовую палитру. Цвета вашего профиля не изменятся.</p>
+      <div class="theme-grid" id="themeGrid" aria-label="Цветовые темы"></div>
+      <div class="theme-preview-control" id="themePreviewControl" hidden>
+        <span class="tiny" id="themePreviewName"></span>
+        <div class="row"><button class="btn small ghost" type="button" id="themeCancel">Отмена</button><button class="btn small primary" type="button" id="themeApply">Применить</button></div>
       </div>
       <div class="sectiontitle"><span>Язык</span></div>
       <div class="acc"><div class="tiny" style="margin-bottom:10px">Язык интерфейса</div><div class="langgrid" id="langGrid" role="radiogroup"></div></div>
@@ -227,7 +235,8 @@
 <script src="app.js"></script>
 <script src="sync.js"></script>
 <script src="upload.js"></script>
-<script src="settings.js"></script>
+  <script src="settings.js"></script>
+  <script src="themes.js"></script>
 <script src="ui.js"></script>
 <script src="social.js"></script>
 <script src="shared-tasks.js" defer></script>

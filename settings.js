@@ -54,7 +54,8 @@ window.renderSettings=function(){
   if(!$('settings'))return;
   buildLangs();renderReset();
   const nm=$('setName');if(nm&&document.activeElement!==nm){nm.value=(state.callsign==='ПОЛЬЗОВАТЕЛЬ')?i18('ПОЛЬЗОВАТЕЛЬ'):state.callsign}
-  mark($('segTheme'),document.documentElement.dataset.theme==='dark'?'dark':'light');
+  mark($('segTheme'),['dark','monochrome','midnight','amethyst','forest','ocean','sunset'].includes(document.documentElement.dataset.theme)?'dark':'light');
+  if(window.FormThemes)FormThemes.renderSettings();
   mark($('segAnim'),state.anim==='off'?'off':'on');
   mark($('segSound'),state.sound==='off'?'off':'on');
   if(window.FormI18n){
@@ -80,7 +81,7 @@ function init(){
   const st=$('segTheme');
   if(st)st.addEventListener('click',e=>{
     const b=e.target.closest('button');if(!b)return;
-    applyTheme(b.dataset.v);state.theme=b.dataset.v;save();renderSettings();
+    if(window.FormThemes)FormThemes.choose(b.dataset.v);else{applyTheme(b.dataset.v);state.theme=b.dataset.v;save();renderSettings();}
   });
   const ss=$('segSound');
   if(ss)ss.addEventListener('click',e=>{

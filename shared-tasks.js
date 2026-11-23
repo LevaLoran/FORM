@@ -37,6 +37,7 @@ function human(e){
   if(/task_cancelled/i.test(m))return tr('Задание уже отменено');
   if(/task_already_completed/i.test(m))return tr('Задание уже выполнено');
   if(/task_not_active/i.test(m))return tr('Задание больше не активно');
+  if(/at_least_two|friend_required|participants_required/i.test(m))return tr('Пригласите хотя бы одного друга');
   if(/forbidden|not_member/i.test(m))return tr('Нет доступа к этому заданию');
   return tr('Не удалось выполнить действие. Попробуйте ещё раз.');
 }
@@ -125,7 +126,8 @@ async function refresh(quiet){
   if(!quiet){T.loading=true;renderContainer()}
   try{
     const data=await rpc('shared_tasks_overview');
-    T.tasks=(data&&data.tasks)||[];
+    // Отменённые задания остаются в БД для аудита, но не в активном списке.
+    T.tasks=((data&&data.tasks)||[]).filter(t=>t.status!=='cancelled');
     T.invites=(data&&data.invites)||[];
     T.activity=(data&&data.activity)||[];
     T.err=null;
@@ -182,7 +184,7 @@ function renderTaskCard(t){
   const myDone=!!(me&&(me.done||(+me.progress||0)>=100||t.my_done));
   const isCompleted=t.status==='completed';
   const isCancelled=t.status==='cancelled';
-  const isDone=isCompleted||isCancelled;
+  const isDone=isCompleted||isCancelled; // завершённые карточки не предлагают удаление/отмену
   const perXp=isCancelled?0:sharedRewardPerPerson(t);
 
   const memHtml=members.map(m=>{
@@ -496,6 +498,8 @@ document.addEventListener('submit',async e=>{
     const cat=($('stCat')||{}).value||'SOCIAL';
     const friendIds=[...e.target.querySelectorAll('input[name="stFriend"]:checked')].map(i=>i.value);
     if(!title.trim())return toast(tr('Введите название задания'));
+    if(!friendIds.length)return toast(tr('Пригласите хотя бы одного друга, чтобы создать совместное задание'));
+    if(friendIds.includes(String(uid)))return toast(tr('Нельзя создать совместное задание только для себя'));
     try{
       await rpc('create_shared_task',{
         p_title:title.trim(),

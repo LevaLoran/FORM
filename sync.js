@@ -52,7 +52,7 @@ function mergeDocs(B,L,R){
       if(lc&&!rc)return L[k];if(rc&&!lc)return R[k];if(!lc&&!rc)return R[k]}
     return newer[k];
   };
-  ['callsign','theme','avatar','avatarOrig','lang','anim','sound'].forEach(k=>{const v=scalar(k);if(v!==undefined)o[k]=v});
+  ['callsign','theme','themeOnboarded','avatar','avatarOrig','lang','anim','sound'].forEach(k=>{const v=scalar(k);if(v!==undefined)o[k]=v});
   o.created=L.created<R.created?L.created:R.created;
   o.missions=mergeMissions(B&&B.missions,L.missions,R.missions);
   const lk=new Set(L.completed.map(keyC)),rk=new Set(R.completed.map(keyC));

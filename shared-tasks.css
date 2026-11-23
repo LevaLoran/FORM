@@ -46,3 +46,6 @@
 .st-feed-item:last-child{border-bottom:0}
 .st-feed-body{flex:1;min-width:0;overflow-wrap:anywhere}
 .st-feed-title{font-weight:600}
+
+/* 1.0: terminal status always disables mutation controls, including stale DOM. */
+.st-card.done [data-st-act="cancel_task"],.st-card.done [data-st-act="leave"],.st-card.done [data-st-act="complete_mine"],.st-card.cancelled .st-act{display:none!important}

@@ -1,3 +1,10 @@
+## 1.0.0 (2026-11-23)
+- New themes, theme preview and optional welcome.
+- Profile gradient `color2` normalization migration.
+- Shared task UI validation and cancelled-task filtering.
+- Animation accessibility and PWA cache version bump.
+- See RELEASE_1.0_NOTES.md for limitations.
+
 # История версий
 
 Подробные заметки к каждой версии FORM. Краткий обзор проекта: [README](README.md).

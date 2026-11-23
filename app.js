@@ -87,7 +87,8 @@ function normalize(raw){
  if(Array.isArray(d.treeSeen))s.treeSeen=d.treeSeen.filter(x=>typeof x==='string');else delete s.treeSeen;
  if(!Number.isFinite(+s.lastBackup))delete s.lastBackup;
  s.lastRank=rankIndex(s.xp);
- if(d.theme==='dark'||d.theme==='light')s.theme=d.theme;else delete s.theme;
+ if(['light','dark','monochrome','midnight','amethyst','forest','ocean','sunset'].includes(d.theme))s.theme=d.theme;else delete s.theme;
+ if(d.themeOnboarded===true)s.themeOnboarded=true;else delete s.themeOnboarded;
  if(window.FormI18n&&FormI18n.LANGS.some(l=>l[0]===d.lang))s.lang=d.lang;else delete s.lang;
  if(d.anim==='off')s.anim='off';else delete s.anim;
  if(d.sound==='off')s.sound='off';else delete s.sound;
@@ -98,7 +99,7 @@ function normalize(raw){
  return s;
 }
 let state=load();
-const APP_VERSION='Бета 0.18.1',DB_NAME='lifeProtocolDB',DB_VER=1;
+const APP_VERSION='1.0.0',DB_NAME='lifeProtocolDB',DB_VER=1;
 let dbp=null,ready=false,idbOk=true;
 const getDb=()=>dbp||(dbp=new Promise((res,rej)=>{const r=indexedDB.open(DB_NAME,DB_VER);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('kv'))r.result.createObjectStore('kv')};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}));
 const idbGet=k=>getDb().then(db=>new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}));
