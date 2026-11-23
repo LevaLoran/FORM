@@ -3,7 +3,7 @@
 <div align="center">
 
 [![Open app](https://img.shields.io/badge/open-levaloran.github.io%2FFORM-111111?style=flat)](https://levaloran.github.io/FORM/)
-![Version](https://img.shields.io/badge/version-beta%200.18.1-2563eb?style=flat)
+![Version](https://img.shields.io/badge/version-1.0.2-2563eb?style=flat)
 ![PWA](https://img.shields.io/badge/PWA-installable-5a0fc8?style=flat)
 ![Languages](https://img.shields.io/badge/languages-12-22863a?style=flat)
 [![Deploy](https://github.com/LevaLoran/FORM/actions/workflows/pages.yml/badge.svg)](https://github.com/LevaLoran/FORM/actions/workflows/pages.yml)
