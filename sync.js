@@ -54,12 +54,14 @@ function mergeDocs(B,L,R){
   };
   ['callsign','theme','themeOnboarded','avatar','avatarOrig','lang','anim','sound'].forEach(k=>{const v=scalar(k);if(v!==undefined)o[k]=v});
   o.created=L.created<R.created?L.created:R.created;
-  o.missions=mergeMissions(B&&B.missions,L.missions,R.missions);
+  o.deletedMissionIds=[...new Set([...(L.deletedMissionIds||[]),...(R.deletedMissionIds||[])])];
+  const tomb=new Set(o.deletedMissionIds);
+  o.missions=mergeMissions(B&&B.missions,L.missions,R.missions).filter(m=>!tomb.has(m.id)&&!tomb.has(m.sourceId));
   const lk=new Set(L.completed.map(keyC)),rk=new Set(R.completed.map(keyC));
   const H=L.xp>=R.xp?L:R,O=H===L?R:L,hk=H===L?lk:rk;
   const onlyO=O.completed.filter(x=>!hk.has(keyC(x)));
   // записи, удалённые (отменённые) на одной из сторон относительно базы, не возвращаются слиянием
-  const del=new Set();
+  const del=new Set([...L.completed,...R.completed].filter(x=>tomb.has(x.id)).map(keyC));
   if(B)B.completed.forEach(x=>{const k=keyC(x);if(!lk.has(k)||!rk.has(k))del.add(k)});
   const comb=[...H.completed,...onlyO],removed=comb.filter(x=>del.has(keyC(x)));
   o.completed=comb.filter(x=>!del.has(keyC(x))).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
@@ -84,6 +86,11 @@ function mergeDocs(B,L,R){
   });
   o.reports=[...rep.values()].sort((a,b)=>a.date<b.date?1:-1).slice(0,30);
   const lb=Math.max(+L.lastBackup||0,+R.lastBackup||0);if(lb)o.lastBackup=lb;
+  if(removed.length){
+    o.unlocked=o.unlocked.filter(n=>medalDefs.some(d=>d[0]===n&&d[2](o)));
+    for(const n of Object.keys(o.medalDates))if(!o.unlocked.includes(n))delete o.medalDates[n];
+    for(const e of removed){const c=o.completed.filter(x=>x.date===e.date).length;if(o.days[e.date])o.days[e.date].p=Math.max(c,o.days[e.date].p-1)}
+  }
   o.updated=Math.max(L.updated||0,R.updated||0);o.v=3;
   return normalize(o);
 }

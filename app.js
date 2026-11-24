@@ -82,6 +82,7 @@ function normalize(raw){
  const names=medalDefs.map(m=>m[0]);
  s.unlocked=(Array.isArray(s.unlocked)?s.unlocked:[]).map(n=>medalMig[n]||n).filter((n,i,a)=>names.includes(n)&&a.indexOf(n)===i);
  if(legacy)migrateLegacy(s);
+ s.deletedMissionIds=[...new Set((Array.isArray(d.deletedMissionIds)?d.deletedMissionIds:[]).map(cleanId).filter(Boolean))];
  s.v=3;
  if(s.callsign==='OPERATOR'||s.callsign==='\u041e\u041f\u0415\u0420\u0410\u0422\u041e\u0420')s.callsign='ПОЛЬЗОВАТЕЛЬ'; // старое имя по умолчанию
  if(Array.isArray(d.treeSeen))s.treeSeen=d.treeSeen.filter(x=>typeof x==='string');else delete s.treeSeen;
@@ -99,7 +100,7 @@ function normalize(raw){
  return s;
 }
 let state=load();
-const APP_VERSION='1.1.1',DB_NAME='lifeProtocolDB',DB_VER=1;
+const APP_VERSION='1.2.0',DB_NAME='lifeProtocolDB',DB_VER=1;
 let dbp=null,ready=false,idbOk=true;
 const getDb=()=>dbp||(dbp=new Promise((res,rej)=>{const r=indexedDB.open(DB_NAME,DB_VER);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('kv'))r.result.createObjectStore('kv')};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}));
 const idbGet=k=>getDb().then(db=>new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)}));
@@ -285,6 +286,19 @@ function saveMission(id){
 }
 function deleteMission(id){
  const m=state.missions.find(x=>x.id===id);
+ if(!m)return;
+ const root=m.sourceId||m.id;
+ const ids=new Set(m.repeat==='daily'?state.missions.filter(x=>x.id===root||x.sourceId===root).map(x=>x.id):[id]);
+ const entries=state.completed.filter(x=>ids.has(x.id));
+ const xp=entries.reduce((n,x)=>n+Math.max(0,Number(x.xp)||0),0);
+ if(entries.length&&!confirm(i18('Удалить задачу и начисленный опыт?')+' −'+xp+' XP'))return;
+ state.deletedMissionIds=[...new Set([...(state.deletedMissionIds||[]),...ids])];
+ state.completed=state.completed.filter(x=>!ids.has(x.id));
+ state.xp=Math.max(0,state.xp-xp);
+ for(const e of entries){const k=skillMap[e.category]||'SOCIAL';state.skills[k]=Math.max(0,(state.skills[k]||0)-1);if(state.days[e.date])state.days[e.date].p=Math.max(0,state.days[e.date].p-1)}
+ state.lastRank=rankIndex(state.xp);
+ state.unlocked=state.unlocked.filter(n=>medalDefs.some(d=>d[0]===n&&d[2](state)));
+ for(const n of Object.keys(state.medalDates||{}))if(!state.unlocked.includes(n))delete state.medalDates[n];
  if(m&&m.repeat==='daily'){const root=m.sourceId||m.id;state.missions=state.missions.filter(x=>x.id!==root&&x.sourceId!==root&&x.id!==id)}
  else state.missions=state.missions.filter(x=>x.id!==id);
  save();closeModal();render();
@@ -486,7 +500,7 @@ function renderTree(){
   const fresh=state.treeSeen?now.filter(x=>!state.treeSeen.includes(x)):[];
   fresh.forEach(f=>pulse.add(f));
   window.freshSkills=fresh.map(f=>tierNames[f.slice(0,-1)][+f.slice(-1)]);
-  if(!state.treeSeen||fresh.length){state.treeSeen=now;save()}
+  if(!state.treeSeen||fresh.length||state.treeSeen.length!==now.length){state.treeSeen=now;save()}
   let ln='',nd='',hd='';
   treeGroups.forEach((g,gi)=>{hd+=`<div class="tg" style="left:${PADX+gi*2*COLW}px;width:${COLW+NW}px">${g[0]}</div>`});
   treeOrder.forEach((c,i)=>{

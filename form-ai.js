@@ -30,6 +30,7 @@ const IDEA_NAMES={
 };
 const STATES=new Set(['idle','happy','thinking','talking','surprised','sleep','celebration']);
 let root,launch,panel,mini,full,status,answerBox,results,questions,scrim;
+const EXTRA_IDEAS={EDUCATION:[['Повторить конспект','Review your notes'],['Решить одну учебную задачу','Solve one practice problem'],['Объяснить новую тему своими словами','Explain a new topic in your own words']],PRODUCTIVITY:[['Разбить задачу на три шага','Break a task into three steps'],['Убрать лишнее с рабочего стола','Tidy your desk'],['Выбрать один приоритет','Pick one priority']],CREATIVE:[['Записать новую идею','Write down a new idea'],['Сделать музыкальный набросок','Make a musical sketch'],['Нарисовать небольшой эскиз','Draw a small sketch']],FITNESS:[['Сделать комфортную прогулку','Take a comfortable walk'],['Немного размяться в своём темпе','Stretch gently at your own pace']],PERSONAL:[['Написать другу','Message a friend'],['Поблагодарить кого-нибудь','Thank someone']],HEALTH:[['Сделать перерыв от экрана','Take a screen break'],['Выделить время на отдых','Make time for rest']],TECH:[['Разобрать небольшой пример кода','Explore a small code example'],['Изучить одну функцию программы','Learn one software feature'],['Сохранить заметку о проекте','Save a project note']]};
 let isOpen=false,stateName='idle',sleepTimer=0,reactionTimer=0,ideaPage=0,observer=null;
 const $=id=>document.getElementById(id);
 function progress(){
@@ -59,8 +60,11 @@ function curated(){
   const score={}; for(const m of p.all)score[m.category]=(score[m.category]||0)+2;
   for(const m of recent)score[m.category]=(score[m.category]||0)+3;
   const ordered=Object.keys(IDEA_NAMES).sort((a,b)=>(score[b]||0)-(score[a]||0));
-  const offset=ideaPage++ % ordered.length;
-  return ordered.slice(offset).concat(ordered.slice(0,offset)).slice(0,3).map(category=>({category, title:(IDEA_NAMES[category][language()]||IDEA_NAMES[category].en)}));
+  const used=new Set(p.all.map(m=>m.title));
+  const lang=language(),pool=[];
+  for(const category of ordered){pool.push({category,title:IDEA_NAMES[category][lang]||IDEA_NAMES[category].en});if(lang==='ru'||lang==='en')for(const pair of EXTRA_IDEAS[category]||[])pool.push({category,title:pair[lang==='ru'?0:1]});}
+  const available=pool.filter(x=>!used.has(x.title));if(!available.length)return [];
+  const offset=(ideaPage++*3)%available.length;return available.slice(offset).concat(available.slice(0,offset)).slice(0,3);
 }
 function taskCard(item,fromPlan=false){
   const card=make('article','fai-suggestion');
@@ -115,6 +119,7 @@ function act(action,idea){
 }
 function renderLanguage(){
   if(!root)return;
+  full.setAttribute('aria-label',language()==='ru'?'Погладить Формика': 'Pet Formik');
   launch.setAttribute('aria-label',tr('open'));$('faiClose').setAttribute('aria-label',tr('close'));
   $('faiHeading').textContent=tr('name');$('faiSubtitle').textContent=tr('subtitle');
   $('faiQuestionTitle').textContent=tr('interests');$('faiForYou').textContent=tr('foryou');
@@ -170,6 +175,12 @@ function init(){
   </section>`;
   document.body.append(root);
   launch=$('faiLaunch');panel=$('faiPanel');mini=$('faiMini');full=$('faiFull');status=$('faiStatus');answerBox=$('faiAnswer');results=$('faiResults');questions=$('faiQuestions');scrim=$('faiScrim');
+  let pet=null,lastPet=0;
+  full.style.touchAction='none';full.tabIndex=0;full.setAttribute('role','button');
+  full.addEventListener('pointerdown',e=>{pet={x:e.clientX,y:e.clientY};try{full.setPointerCapture(e.pointerId)}catch(_){};setCharacter('happy',1400)});
+  full.addEventListener('pointermove',e=>{if(!pet)return;if(Math.hypot(e.clientX-pet.x,e.clientY-pet.y)>8&&Date.now()-lastPet>220){lastPet=Date.now();pet={x:e.clientX,y:e.clientY};setCharacter('happy',1500)}});
+  for(const event of ['pointerup','pointercancel','lostpointercapture'])full.addEventListener(event,()=>{pet=null});
+  full.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setCharacter('happy',1500)}});
   setupDock();$('faiClose').addEventListener('click',close);scrim.addEventListener('click',close);
   panel.addEventListener('click',e=>{const b=e.target.closest('[data-fm-action]');if(b)act(b.dataset.fmAction,b._idea);else freshness()});
   document.addEventListener('keydown',e=>{if(isOpen&&e.key==='Escape'){e.stopPropagation();close()}});
@@ -181,7 +192,7 @@ function init(){
   if('MutationObserver' in window){const langObserver=new MutationObserver(()=>renderLanguage());langObserver.observe(document.documentElement,{attributes:true,attributeFilter:['lang']})}
   renderLanguage();refreshVisibility();
 }
-const api={open,close,react(name){if(STATES.has(name)){setCharacter(name,name==='celebration'?2300:1200);if(isOpen)renderRec()}},setState:setCharacter,getState:()=>stateName,refresh:()=>{if(isOpen)renderLanguage()},get hasGenerativeAPI(){return false},version:'1.1.1-formik'};
+const api={open,close,react(name){if(STATES.has(name)){setCharacter(name,name==='celebration'?2300:1200);if(isOpen)renderRec()}},setState:setCharacter,getState:()=>stateName,refresh:()=>{if(isOpen)renderLanguage()},get hasGenerativeAPI(){return false},version:'1.2.0-formik'};
 window.Formik=api;window.FormAI=api; // backwards compatibility with existing mission/XP reactions
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();

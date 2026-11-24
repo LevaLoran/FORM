@@ -92,3 +92,11 @@ html:not([data-auth="in"]) .fai-root{display:none}
 /* Cover only: remove historical ASCII/text effects, preserve user-selected gradient and image. */
 .pc-banner::before,.pc-banner::after{content:none!important;background:none!important;display:none!important}
 .fai-character[data-state="sleep"] .fai-eye-halo{opacity:.07}
+
+/* 1.2.0 — panel entrance and interaction */
+.fai-panel:not([hidden]){animation:formik-enter .25s cubic-bezier(.2,.8,.2,1) both}
+.fai-stage .fai-character{cursor:grab;touch-action:none;outline-offset:3px}
+.fai-stage .fai-character:active{cursor:grabbing}
+@keyframes formik-enter{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.fai-panel:not([hidden]){animation:none}}
+html[data-anim="off"] .fai-panel:not([hidden]){animation:none}
